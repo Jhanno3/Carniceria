@@ -1,0 +1,18 @@
+# Variables de entorno (credenciales) — nunca versionadas (constitution.md, Principio VIII)
+.env
+.env.*
+!.env.example
+
+# Backend (Maven)
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend (Node/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.idea/
+.vscode/
+*.iml

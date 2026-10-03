@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+/* Tokens del sistema visual — especificacion-carniceria.md, sección 5 */
+@theme {
+  --color-fondo: #ffffff;
+  --color-texto: #1c1917;
+  --color-texto-secundario: #57534e;
+  --color-borde: #e7e5e4;
+  --color-borde-campo: #d6d3d1;
+  --color-fondo-suave: #f5f5f4;
+  --color-fondo-suave-2: #fafaf9;
+
+  --color-vendible: #8e1b1b;
+  --color-hueso: #2f5d8a;
+  --color-grasa: #6e93ba;
+  --color-merma: #a9c1db;
+
+  --color-exito-texto: #166534;
+  --color-exito-fondo: #dcfce7;
+  --color-aviso-texto: #9a3412;
+  --color-aviso-fondo: #fff4e5;
+  --color-error: #b91c1c;
+
+  /* Fila seleccionada en la tabla de cortes (sección 4.1: "rosado suave") */
+  --color-rosado: #fce7f3;
+
+  /* Escala del mapa de cortes: de rgb(246,228,224) a rgb(110,20,20) — ver modelo/colorZonaMapa.ts */
+  --color-mapa-claro: #f6e4e0;
+  --color-mapa-oscuro: #6e1414;
+
+  --font-titulos: 'Archivo', system-ui, sans-serif;
+  --font-texto: 'Public Sans', system-ui, sans-serif;
+
+  --text-titulo-seccion: 18px;
+  --text-cifra-tarjeta: 34px;
+  --text-cuerpo: 15px;
+  --text-etiqueta: 13px;
+}
+
+body {
+  margin: 0;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-texto);
+}
+
+/* Toda cifra numérica (kg, $, %) debe llevar esta clase para que las columnas queden alineadas (sección 5.2) */
+.numero {
+  font-variant-numeric: tabular-nums;
+}
