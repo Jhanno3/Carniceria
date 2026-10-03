@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { AuthPage } from './features/auth/AuthPage'
 import { DespostadoPage } from './features/despostado/DespostadoPage'
+import { InicioPage } from './features/inicio/InicioPage'
 import { usePerfilPropio } from './features/perfiles/api/usePerfilPropio'
 import { UsuariosPage } from './features/perfiles/UsuariosPage'
 import { supabase } from './shared/supabase/cliente'
@@ -27,14 +28,16 @@ function EstadoDeCuenta({ mensaje }: { mensaje: string }) {
   )
 }
 
-function NavDueno({
+function NavOperativa({
+  mostrarUsuarios,
   seccion,
   onCambiarSeccion,
 }: {
-  seccion: 'despostado' | 'usuarios'
-  onCambiarSeccion: (s: 'despostado' | 'usuarios') => void
+  mostrarUsuarios: boolean
+  seccion: 'inicio' | 'despostado' | 'usuarios'
+  onCambiarSeccion: (s: 'inicio' | 'despostado' | 'usuarios') => void
 }) {
-  function pastilla(id: 'despostado' | 'usuarios', etiqueta: string) {
+  function pastilla(id: 'inicio' | 'despostado' | 'usuarios', etiqueta: string) {
     const activa = seccion === id
     return (
       <button
@@ -50,8 +53,9 @@ function NavDueno({
   return (
     <nav className="flex items-center justify-between border-b border-borde p-4">
       <div className="flex gap-2">
+        {pastilla('inicio', 'Inicio')}
         {pastilla('despostado', 'Despostado')}
-        {pastilla('usuarios', 'Usuarios')}
+        {mostrarUsuarios && pastilla('usuarios', 'Usuarios')}
       </div>
       <button
         type="button"
@@ -66,7 +70,7 @@ function NavDueno({
 
 function AppAutenticada() {
   const { data: perfil, isLoading, isError, error } = usePerfilPropio(true)
-  const [seccion, setSeccion] = useState<'despostado' | 'usuarios'>('despostado')
+  const [seccion, setSeccion] = useState<'inicio' | 'despostado' | 'usuarios'>('inicio')
 
   if (isError) {
     return (
@@ -81,18 +85,21 @@ function AppAutenticada() {
   }
 
   if (perfil.estado === 'pendiente') {
-    return <EstadoDeCuenta mensaje="Tu cuenta está pendiente de aprobación. Avisale al dueño." />
+    return <EstadoDeCuenta mensaje="Tu cuenta está pendiente de aprobación. Avisale al administrador." />
   }
 
   if (perfil.estado === 'rechazado') {
-    return <EstadoDeCuenta mensaje="Tu solicitud fue rechazada. Consultá con el dueño." />
+    return <EstadoDeCuenta mensaje="Tu solicitud fue rechazada. Consultá con el administrador." />
   }
 
-  if (perfil.rol === 'dueno') {
+  if (perfil.rol === 'admin' || perfil.rol === 'dueno') {
+    const esAdmin = perfil.rol === 'admin'
     return (
       <>
-        <NavDueno seccion={seccion} onCambiarSeccion={setSeccion} />
-        {seccion === 'despostado' ? <DespostadoPage /> : <UsuariosPage />}
+        <NavOperativa mostrarUsuarios={esAdmin} seccion={seccion} onCambiarSeccion={setSeccion} />
+        {seccion === 'inicio' && <InicioPage />}
+        {seccion === 'despostado' && <DespostadoPage onIrAInicio={() => setSeccion('inicio')} />}
+        {seccion === 'usuarios' && esAdmin && <UsuariosPage />}
       </>
     )
   }

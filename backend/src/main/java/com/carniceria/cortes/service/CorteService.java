@@ -29,14 +29,22 @@ public class CorteService {
 	}
 
 	@Transactional
-	public CorteResponse crear(CorteRequest request) {
+	public CorteResponse crear(CorteRequest request, UUID duenoId) {
 		Cuarto cuarto = parsearCuarto(request.cuarto());
+		// RLS ya scopea findByPlu al propio negocio: dos dueños distintos pueden usar el
+		// mismo PLU sin pisarse (V10__multi_negocio.sql, unique(dueno_id, plu)).
 		corteRepository.findByPlu(request.plu()).ifPresent(existente -> {
 			throw new PluDuplicadoException(request.plu());
 		});
 
-		CorteEntity corte = new CorteEntity(request.nombre(), request.plu(), cuarto, request.zonaMapa(), true);
-		return CorteResponse.de(corteRepository.save(corte));
+		CorteEntity corte = new CorteEntity(request.nombre(), request.plu(), cuarto, request.zonaMapa(), true, duenoId);
+		corteRepository.save(corte);
+		// Flush explícito: el id se genera en memoria (GenerationType.UUID), así que
+		// Hibernate puede diferir el INSERT real hasta el próximo flush — sin esto, un
+		// INSERT que RLS debería rechazar (ej. alguien sin permiso de escritura) recién
+		// fallaría en otro momento, no acá donde se lo puede traducir a un error claro.
+		corteRepository.flush();
+		return CorteResponse.de(corte);
 	}
 
 	@Transactional

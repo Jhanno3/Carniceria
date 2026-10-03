@@ -7,7 +7,7 @@ Los kilos y los importes viajan como `string` con formato `numeric` de Postgres 
 ## Cortes
 
 ### `GET /cortes?incluirInactivos=false`
-Lista los cortes. `incluirInactivos=true` solo lo respeta el backend si el usuario es `dueno`.
+Lista los cortes **del propio negocio** (RLS, `V10__multi_negocio.sql` — cada dueño tiene su catálogo, un empleado ve el de su dueño). `incluirInactivos=true` solo lo respeta el backend si el usuario es `dueno`.
 
 ```json
 200 OK
@@ -22,7 +22,7 @@ Lista los cortes. `incluirInactivos=true` solo lo respeta el backend si el usuar
 { "nombre": "Vacío", "plu": 12, "cuarto": "Trasero", "zonaMapa": "vacio" }
 // 201 Created → mismo shape que GET, con "id"
 ```
-`409 Conflict` si el `plu` ya existe.
+`409 Conflict` si el `plu` ya existe **en el propio negocio** (el PLU es único por `dueno_id`, no global — dos negocios distintos pueden usar el mismo número).
 
 ### `PUT /cortes/{id}`
 Mismo body que `POST`, incluye `activo`. `200 OK` con el corte actualizado.
@@ -30,7 +30,7 @@ Mismo body que `POST`, incluye `activo`. `200 OK` con el corte actualizado.
 ## Estimación automática (FR-113)
 
 ### `GET /medias-reses/estimacion?pesoKg=100.000`
-Solo lectura — no persiste nada. Devuelve el kilaje estimado por corte, calculado como el promedio histórico de `kg / peso_kg` de todas las entradas ya cargadas, multiplicado por el `pesoKg` recibido.
+Solo lectura — no persiste nada. Devuelve el kilaje estimado por corte, calculado como el promedio histórico de `kg / peso_kg` de las entradas ya cargadas **por el usuario autenticado que hace el pedido** (no las de otros usuarios), multiplicado por el `pesoKg` recibido.
 
 ```json
 200 OK
@@ -38,7 +38,7 @@ Solo lectura — no persiste nada. Devuelve el kilaje estimado por corte, calcul
   "cortes": [ { "corteId": "uuid", "kgEstimado": "3.150" }, ... ]
 }
 ```
-`409 Conflict` con `{ "error": "SIN_HISTORIAL", "mensaje": "Todavía no hay ninguna entrada cargada para estimar." }` si no hay ninguna entrada previa — así el frontend sabe que debe ofrecer solo el modo manual (FR-113).
+`409 Conflict` con `{ "error": "SIN_HISTORIAL", "mensaje": "Todavía no hay ninguna entrada cargada para estimar." }` si el usuario autenticado no tiene ninguna entrada previa propia, aunque otros usuarios ya tengan historial — así el frontend sabe que debe ofrecer solo el modo manual (FR-113).
 
 ## Medias reses (entradas de carne)
 
@@ -102,20 +102,24 @@ Corrige una entrada ya cargada: `proveedor`, `pesoKg`, `precioKg`, y/o la lista 
 ### `GET /medias-reses?desde=2026-10-02&hasta=2026-10-02`
 Lista entradas de carne, filtrable por rango de `creado_en` (usado por FR-206 para contar las cargadas hoy). Paginada (`page`, `size`) si la lista crece.
 
-## Perfiles (registro con aprobación previa)
+## Perfiles (multi-negocio, `V10__multi_negocio.sql`)
 
-El alta de cuenta (email+contraseña) no pasa por esta API: el frontend llama directo a `supabase.auth.signUp(...)`, con `nombre` y `rol_solicitado` (`"dueno"` o `"empleado"`) en `options.data` (quedan en el `user_metadata` del JWT). Estos endpoints son lo que pasa *después* de eso.
+El alta de cuenta (email+contraseña) no pasa por esta API: el frontend llama directo a `supabase.auth.signUp(...)`, con `nombre`/`rol_solicitado`/`dueno_invitador_id` en `options.data` (quedan en el `user_metadata` del JWT). Estos endpoints son lo que pasa *después* de eso.
+
+Dos caminos de registro:
+- **Sin link de invitación** (formulario genérico): `rol_solicitado: "dueno"`. Nace `pendiente`, sin `dueno_id`, a la espera de que un `admin` lo apruebe (ver `PUT /perfiles/{id}`). "Empleado" no es una opción acá — un empleado siempre llega por el link de su dueño.
+- **Con link de invitación** (`?invita=<id-del-dueño>` en el frontend): `rol_solicitado: "empleado"`, `dueno_invitador_id: "<ese id>"`. Si ese `id` corresponde a un `dueno` aprobado, la cuenta nace **directo en `estado: "aprobado"`** con `dueno_id` = ese id — nadie tiene que aprobar un segundo paso, el dueño ya lo vouch-eó al invitarlo. Si el código no es válido, cae al mismo `pendiente` sin `dueno_id` que el camino genérico (caso borde raro, sin flujo de UI para resolverlo después).
 
 ### `GET /perfiles/yo`
-Cualquier usuario autenticado. Si todavía no existe un `perfiles` para este usuario, lo crea en `estado: "pendiente"` leyendo `nombre`/`rol_solicitado` del JWT (si `rol_solicitado` no es `"dueno"` ni `"empleado"`, se usa `"empleado"`).
+Cualquier usuario autenticado. Si todavía no existe un `perfiles` para este usuario, lo crea según lo de arriba. Si ya existe y es un `dueno` aprobado, de paso siembra su catálogo de cortes si todavía no tiene ninguno (`CatalogoInicialService`).
 
 ```json
 200 OK
-{ "id": "uuid", "nombre": "Ana Gómez", "rol": "empleado", "estado": "pendiente" }
+{ "id": "uuid", "nombre": "Ana Gómez", "rol": "empleado", "estado": "aprobado" }
 ```
 
 ### `GET /perfiles?estado=pendiente`
-Solo dueño (RLS). Lista cuentas por estado (`pendiente` por default).
+Solo `admin` (RLS, `V9__rol_admin.sql`). Lista cuentas por estado (`pendiente` por default). Un `dueno` no-admin no recibe `403`: RLS simplemente no le muestra ninguna fila ajena (su propia fila solo aparece si coincide con el filtro de `estado`), así que ve una lista vacía.
 
 ```json
 200 OK
@@ -123,7 +127,7 @@ Solo dueño (RLS). Lista cuentas por estado (`pendiente` por default).
 ```
 
 ### `PUT /perfiles/{id}`
-Solo dueño (RLS). Aprueba, rechaza, o cambia el rol de cualquier cuenta.
+Solo `admin` (RLS). Aprueba, rechaza, o cambia el rol de cualquier cuenta — incluido promover a alguien a `admin` (algo que nadie puede pedir para sí mismo al registrarse, ver `GET /perfiles/yo`).
 
 ```json
 // request
@@ -131,7 +135,7 @@ Solo dueño (RLS). Aprueba, rechaza, o cambia el rol de cualquier cuenta.
 // 200 OK → mismo shape que GET /perfiles/yo
 ```
 
-`403 ACCESO_DENEGADO` si quien llama no es un dueño aprobado (RLS bloquea el `UPDATE`, el backend lo traduce). `404 PERFIL_NO_ENCONTRADO` si el `id` no existe.
+`403 ACCESO_DENEGADO` si quien llama no es un `admin` aprobado (RLS bloquea el `UPDATE`, el backend lo traduce) — salvo que el `id` apuntado tampoco sea visible para quien llama (no es ni su propia fila ni hay política que se la muestre), en cuyo caso es `404 PERFIL_NO_ENCONTRADO` antes que nada.
 
 ## Formato de error común
 

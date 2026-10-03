@@ -21,12 +21,12 @@ export function SelectorModoCarga({ disponibleAutomatico, onElegir }: SelectorMo
           onClick={() => onElegir('automatico')}
           className="h-11 flex-1 rounded-xl border border-borde-campo px-4 font-medium text-texto disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Automático — estimar con el historial
+          Automático — estimar con tu historial
         </button>
       </div>
       {!disponibleAutomatico && (
         <p className="text-etiqueta text-texto-secundario">
-          Automático no está disponible todavía: hace falta al menos una entrada cargada antes.
+          Automático no está disponible todavía: hace falta que vos hayas cargado al menos una entrada antes.
         </p>
       )}
     </div>

@@ -5,6 +5,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.carniceria.cortes.repository.CorteRepository;
+import com.carniceria.cortes.service.CatalogoInicialService;
+import com.carniceria.shared.NegocioTestFixtures;
+import com.carniceria.shared.security.JwtClaimsHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Contra Supabase real. Ver contracts/despostado-api.md, "POST /medias-reses".
+ *
+ * El dueño de este test (DUENO_TEST_ID) es una cuenta real de Supabase Auth sin perfil
+ * permanente, no el "87b585e4..." de otros tests — ese pasó a ser la cuenta "admin" única
+ * (V9__rol_admin.sql) y un admin no es dueño de ningún negocio (V10__multi_negocio.sql).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -31,7 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Rollback
 class MediaResControllerTest {
 
-	private static final String DUENO_TEST_ID = "87b585e4-f4e8-4d9a-858d-efb77058a49d";
+	private static final UUID DUENO_TEST_ID = UUID.fromString("04d97faa-fd1c-42ce-9fa6-52c697733687");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -39,19 +47,36 @@ class MediaResControllerTest {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private JwtClaimsHolder jwtClaimsHolder;
+
+	@Autowired
+	private NegocioTestFixtures negocioTestFixtures;
+
+	@Autowired
+	private CatalogoInicialService catalogoInicialService;
+
+	@Autowired
+	private CorteRepository corteRepository;
+
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	private UUID corteVacioId;
 
 	@BeforeEach
-	void buscarCorteDeEjemplo() {
-		// PLU 12 = Vacío, seedeado en V3__seed_cortes.sql.
-		corteVacioId = jdbcTemplate.queryForObject(
-				"select id from cortes where plu = 12", UUID.class);
+	void prepararDuenoConCatalogo() {
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		negocioTestFixtures.registrarComoDueno(DUENO_TEST_ID, "Dueño de MediaResControllerTest");
+		catalogoInicialService.sembrarSiHaceFalta(DUENO_TEST_ID);
+		// PLU 12 = Vacío, sembrado por CatalogoInicialService. Por JPA (no jdbcTemplate
+		// crudo): un SELECT directo no dispara el auto-flush de Hibernate y no vería los
+		// INSERT que sembrarSiHaceFalta todavía tiene sin volcar a la base.
+		corteVacioId = corteRepository.findByPlu(12).orElseThrow().getId();
+		jwtClaimsHolder.clear();
 	}
 
 	private RequestPostProcessor jwtDeDueno() {
-		return jwt().jwt(j -> j.subject(DUENO_TEST_ID).claim("role", "authenticated"));
+		return jwt().jwt(j -> j.subject(DUENO_TEST_ID.toString()).claim("role", "authenticated"));
 	}
 
 	@Test
@@ -92,7 +117,11 @@ class MediaResControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error").value("KG_INVALIDO"));
 
-		Long cantidad = jdbcTemplate.queryForObject("select count(*) from medias_reses", Long.class);
+		// No un count(*) global: la base de dev es compartida con uso manual real, puede
+		// haber filas de otras cargas. Se filtra por el proveedor fijo de este fixture, que
+		// ninguna carga real usa.
+		Long cantidad = jdbcTemplate.queryForObject(
+				"select count(*) from medias_reses where proveedor = ?", Long.class, "Frigorífico de prueba");
 		org.assertj.core.api.Assertions.assertThat(cantidad).isZero();
 	}
 

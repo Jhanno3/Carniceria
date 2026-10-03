@@ -15,7 +15,7 @@ public class PerfilEntity {
 	// En minúscula a propósito: EnumType.STRING guarda name() tal cual, debe coincidir
 	// con el check constraint de V1__perfiles.sql / V7__perfiles_estado.sql.
 	public enum Rol {
-		dueno, empleado
+		admin, dueno, empleado
 	}
 
 	public enum Estado {
@@ -34,6 +34,15 @@ public class PerfilEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Estado estado;
+
+	/**
+	 * El "negocio" al que pertenece esta cuenta (V10__multi_negocio.sql). Para un
+	 * {@code dueno}, es su propio {@code id} (es dueño de sí mismo); para un
+	 * {@code empleado}, es el {@code id} del dueño que lo invitó; {@code null} para
+	 * {@code admin} (no opera ningún negocio) o mientras una cuenta sigue pendiente.
+	 */
+	@Column(name = "dueno_id")
+	private UUID duenoId;
 
 	protected PerfilEntity() {
 	}
@@ -67,5 +76,13 @@ public class PerfilEntity {
 
 	public void setEstado(Estado estado) {
 		this.estado = estado;
+	}
+
+	public UUID getDuenoId() {
+		return duenoId;
+	}
+
+	public void setDuenoId(UUID duenoId) {
+		this.duenoId = duenoId;
 	}
 }

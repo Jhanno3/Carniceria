@@ -103,8 +103,8 @@ public class MediaResService {
 	}
 
 	@Transactional
-	public EstimacionResponse estimar(BigDecimal pesoKgNuevo) {
-		var historico = despostadoRepository.buscarHistoricoCompleto();
+	public EstimacionResponse estimar(BigDecimal pesoKgNuevo, UUID usuarioId) {
+		var historico = despostadoRepository.buscarHistoricoPorUsuario(usuarioId);
 		if (historico.isEmpty()) {
 			throw new SinHistorialException();
 		}

@@ -32,13 +32,13 @@ public class PerfilController {
 		return perfilService.obtenerOCrearPropio(jwt);
 	}
 
-	/** Solo dueño (RLS): lista de cuentas para la pantalla "Usuarios". */
+	/** Solo admin (RLS): lista de cuentas para la pantalla "Usuarios". */
 	@GetMapping
 	public List<PerfilResponse> listar(@RequestParam(defaultValue = "pendiente") String estado) {
 		return perfilService.listarPorEstado(estado);
 	}
 
-	/** Solo dueño (RLS): aprobar/rechazar, o cambiar el rol de una cuenta. */
+	/** Solo admin (RLS): aprobar/rechazar, o cambiar el rol de una cuenta. */
 	@PutMapping("/{id}")
 	public PerfilResponse actualizar(@PathVariable UUID id, @Valid @RequestBody PerfilActualizarRequest request) {
 		return perfilService.actualizar(id, request);

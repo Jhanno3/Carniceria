@@ -10,12 +10,15 @@ import { TarjetasPerdida } from './components/TarjetasPerdida'
 import { TarjetasResumen } from './components/TarjetasResumen'
 import { calcularResumen } from './modelo/resumen'
 import { parsearNumero } from '../../shared/formato/formatoEsAr'
+import { Modal } from '../../shared/ui/Modal'
 
 // especificacion-carniceria.md, sección 2.2 — PLU provisorio asignado en V3__seed_cortes.sql.
+// Aguja/Marucha/Pecho/Cogote (16/18/19/20) se sacaron del catálogo en V8 — ver
+// V8__eliminar_cortes_redundantes.sql.
 const KG_DE_EJEMPLO_POR_PLU: Record<number, number> = {
   1: 3.0, 2: 1.8, 3: 4.5, 4: 6.0, 5: 2.5, 6: 1.2, 7: 3.0, 8: 1.4,
   12: 3.3, 9: 1.3, 10: 3.5, 11: 11.0, 13: 1.5, 14: 4.0, 15: 4.0,
-  16: 7.5, 17: 6.5, 18: 1.5, 19: 3.5, 20: 3.5, 21: 6.5,
+  17: 6.5, 21: 6.5,
 }
 
 function aNumeroSeguro(texto: string): number {
@@ -30,7 +33,11 @@ function aTextoPlano(texto: string): string {
   return String(aNumeroSeguro(texto))
 }
 
-export function DespostadoPage() {
+interface DespostadoPageProps {
+  onIrAInicio: () => void
+}
+
+export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   const { data: cortes } = useCortes()
   const [proveedor, setProveedor] = useState('')
   const [pesoKgTexto, setPesoKgTexto] = useState('')
@@ -209,8 +216,31 @@ export function DespostadoPage() {
               No se pudo cargar la entrada: {cargarEntrada.error instanceof Error ? cargarEntrada.error.message : ''}
             </p>
           )}
-          {cargarEntrada.isSuccess && <p className="text-cuerpo text-exito-texto">Entrada cargada con éxito.</p>}
         </>
+      )}
+
+      {cargarEntrada.isSuccess && (
+        <Modal titulo="Entrada cargada con éxito" onCerrar={() => cargarEntrada.reset()}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => cargarEntrada.reset()}
+              className="h-11 rounded-xl border border-borde-campo px-4 font-medium text-texto"
+            >
+              OK
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                cargarEntrada.reset()
+                onIrAInicio()
+              }}
+              className="h-11 rounded-xl bg-vendible px-4 font-medium text-white"
+            >
+              Inicio
+            </button>
+          </div>
+        </Modal>
       )}
     </main>
   )

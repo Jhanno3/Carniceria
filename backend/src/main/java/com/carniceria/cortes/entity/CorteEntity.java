@@ -38,15 +38,20 @@ public class CorteEntity {
 	@Column(nullable = false)
 	private boolean activo = true;
 
+	/** El negocio dueño de este corte (V10__multi_negocio.sql) — cada dueño tiene su propio catálogo. */
+	@Column(name = "dueno_id", nullable = false)
+	private UUID duenoId;
+
 	protected CorteEntity() {
 	}
 
-	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, String zonaMapa, boolean activo) {
+	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, String zonaMapa, boolean activo, UUID duenoId) {
 		this.nombre = nombre;
 		this.plu = plu;
 		this.cuarto = cuarto;
 		this.zonaMapa = zonaMapa;
 		this.activo = activo;
+		this.duenoId = duenoId;
 	}
 
 	public UUID getId() {
@@ -91,5 +96,9 @@ public class CorteEntity {
 
 	public void setActivo(boolean activo) {
 		this.activo = activo;
+	}
+
+	public UUID getDuenoId() {
+		return duenoId;
 	}
 }

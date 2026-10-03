@@ -41,8 +41,8 @@ public class MediaResController {
 	}
 
 	@GetMapping("/estimacion")
-	public EstimacionResponse estimar(@RequestParam BigDecimal pesoKg) {
-		return mediaResService.estimar(pesoKg);
+	public EstimacionResponse estimar(@RequestParam BigDecimal pesoKg, @AuthenticationPrincipal Jwt jwt) {
+		return mediaResService.estimar(pesoKg, UUID.fromString(jwt.getSubject()));
 	}
 
 	@GetMapping("/{id}")

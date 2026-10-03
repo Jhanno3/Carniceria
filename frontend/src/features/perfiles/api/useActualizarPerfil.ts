@@ -4,11 +4,11 @@ import type { PerfilResponse } from './types'
 
 interface ActualizarPerfilInput {
   id: string
-  rol: 'dueno' | 'empleado'
+  rol: 'admin' | 'dueno' | 'empleado'
   estado: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
-/** PUT /perfiles/{id} — aprobar, rechazar, o cambiar el rol de una cuenta (solo dueño). */
+/** PUT /perfiles/{id} — aprobar, rechazar, o cambiar el rol de una cuenta (solo admin). */
 export function useActualizarPerfil() {
   const queryClient = useQueryClient()
 

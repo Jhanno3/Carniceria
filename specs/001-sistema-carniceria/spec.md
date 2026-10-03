@@ -41,8 +41,8 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 **US-1.4** — Como dueño, puedo editar la lista de cortes y sus PLU para que coincidan con los configurados en la balanza.
 
 **US-1.5** — Como dueño, pido una estimación automática de kilos por corte para no arrancar de cero cada vez.
-- **Dado** que ya guardé al menos una entrada de carne anteriormente (con sus cortes), **cuando** elijo carga **automática** para una media res nueva, **entonces** el sistema calcula, para cada corte, el porcentaje promedio que representó sobre el peso de entrada en todas las entradas guardadas hasta ahora, y lo aplica al peso de la media res nueva para precargar su kilaje estimado.
-- **Dado** que todavía no guardé ninguna entrada de carne, **cuando** intento elegir carga **automática**, **entonces** esa opción no está disponible (solo puedo elegir manual).
+- **Dado** que ya guardé al menos una entrada de carne anteriormente (con sus cortes), **cuando** elijo carga **automática** para una media res nueva, **entonces** el sistema calcula, para cada corte, el porcentaje promedio que representó sobre el peso de entrada en **mis propias** entradas guardadas hasta ahora (no las de otros usuarios), y lo aplica al peso de la media res nueva para precargar su kilaje estimado.
+- **Dado** que todavía no guardé ninguna entrada de carne propia (aunque otro usuario sí haya cargado entradas), **cuando** intento elegir carga **automática**, **entonces** esa opción no está disponible (solo puedo elegir manual).
 - **Dado** que el sistema precargó un estimado, **cuando** reviso la tabla, **entonces** puedo corregir cualquier corte a mano antes de cargar la entrada; el sistema no guarda ninguna marca de "esto fue estimado" — una vez guardado, es un dato igual a cualquier otro.
 
 ### 2.2 Requisitos funcionales
@@ -61,14 +61,14 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 | FR-110 | La acción "Restablecer ejemplo" carga los valores de referencia de la sección 2.2 de la especificación (incluyendo hueso 11 kg, grasa 6 kg, merma 2 kg sobre una media res de 100 kg). Es independiente de los modos manual/automático: sirve para probar el sistema, no para operar con datos reales. |
 | FR-111 | La acción final "Cargar entrada" persiste, en una sola operación atómica, la media res, los kilos por corte y las pérdidas. Si falla cualquier parte, no se guarda nada (ni la media res). No existe ningún estado "a medias" guardado en la base. |
 | FR-112 | Antes de entrar a la tabla de cortes, el dueño elige el modo de carga: **manual** (todos los campos de kilos arrancan vacíos) o **automática** (ver FR-113). Ambos modos llevan a la misma tabla editable; el modo elegido no se guarda ni distingue después. |
-| FR-113 | El modo **automático** calcula, para cada corte activo, el porcentaje promedio que representó sobre `peso_kg` en todas las entradas ya cargadas (FR-111) hasta ese momento, y lo aplica al `peso_kg` de la media res nueva para precargar su kilaje estimado en la tabla. Solo está disponible si existe al menos una entrada cargada previamente; si no, solo se ofrece el modo manual. |
+| FR-113 | El modo **automático** calcula, para cada corte activo, el porcentaje promedio que representó sobre `peso_kg` en las entradas ya cargadas por el **mismo usuario** (`creado_por`, FR-111) hasta ese momento, y lo aplica al `peso_kg` de la media res nueva para precargar su kilaje estimado en la tabla. Solo está disponible si ese usuario tiene al menos una entrada propia cargada previamente; si no, solo se ofrece el modo manual, aunque otros usuarios ya tengan historial. |
 
 ### 2.3 Casos borde
 
 - Guardar una entrada cuyo `sin_asignar_kg` sea distinto de cero: se permite guardar (el mensaje de control queda como advertencia visible, no bloquea el guardado).
 - Dos cortes con la misma `zona_mapa` (ej. Cuadrada y Tapa de nalga comparten "nalga"): el mapa suma sus kilos para pintar esa única zona.
 - Corte sin `zona_mapa` (carne picada/recortes): participa en los cálculos pero no en el mapa.
-- Se intenta elegir carga automática sin ninguna entrada previa cargada: la opción aparece deshabilitada, no se ofrece una estimación con valores de ejemplo.
+- Se intenta elegir carga automática sin ninguna entrada previa propia cargada: la opción aparece deshabilitada, no se ofrece una estimación con valores de ejemplo, aun si otro usuario del sistema ya cargó entradas.
 - Se agrega un corte nuevo (FR-109) después de que ya existan entradas cargadas: ese corte no tiene historial propio, así que su estimación automática parte de 0 kg hasta que se cargue al menos una vez.
 - Se cierra o recarga la pantalla a mitad de la carga (antes de tocar "Cargar entrada"): no queda ningún rastro en la base; hay que empezar de nuevo.
 

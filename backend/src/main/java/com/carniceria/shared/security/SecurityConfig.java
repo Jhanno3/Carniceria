@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -24,6 +27,9 @@ public class SecurityConfig {
 	@Value("${app.cors-allowed-origins}")
 	private String corsAllowedOrigins;
 
+	@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+	private String jwkSetUri;
+
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtClaimsHolder jwtClaimsHolder)
 			throws Exception {
@@ -32,10 +38,23 @@ public class SecurityConfig {
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
-				}))
+				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder())))
 				.addFilterAfter(new JwtClaimsContextFilter(jwtClaimsHolder), BearerTokenAuthenticationFilter.class);
 		return http.build();
+	}
+
+	/**
+	 * Los proyectos nuevos de Supabase firman con una clave asimétrica ES256 (JWKS con
+	 * {@code "kty":"EC"}), no con el HS256 de clave compartida de proyectos viejos. El
+	 * decoder que Spring Boot auto-configura a partir de {@code jwk-set-uri} sin más
+	 * ajuste solo acepta RS256 por defecto, así que rechaza cualquier JWT real de Supabase
+	 * con "Another algorithm expected, or no matching key(s) found" (research.md).
+	 */
+	@Bean
+	public JwtDecoder jwtDecoder() {
+		return NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+				.jwsAlgorithm(SignatureAlgorithm.ES256)
+				.build();
 	}
 
 	private CorsConfigurationSource corsConfigurationSource() {

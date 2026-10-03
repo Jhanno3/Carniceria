@@ -97,6 +97,31 @@ class PerfilControllerTest {
 	}
 
 	@Test
+	void unDueno_noPuedeGestionarCuentas_soloAdmin() throws Exception {
+		// V9__rol_admin.sql: "dueno" sigue teniendo acceso operativo (cortes, medias_reses,
+		// despostado) via is_dueno(), pero gestionar perfiles pasa a ser exclusivo de "admin".
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		perfilesTestFixtures.crearAprobada(OTRO_USUARIO_TEST_ID, "Socio sin Usuarios", "dueno");
+		jwtClaimsHolder.clear();
+
+		RequestPostProcessor jwtDeDuenoNoAdmin = jwt().jwt(j -> j.subject(OTRO_USUARIO_TEST_ID.toString())
+				.claim("role", "authenticated"));
+
+		mockMvc.perform(get("/api/v1/perfiles").with(jwtDeDuenoNoAdmin).param("estado", "pendiente"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0)); // RLS no le muestra ninguna fila ajena, no es un 403 acá.
+
+		// Se apunta a sí mismo (no a otra cuenta): así su propia fila es visible por
+		// `perfiles_select_propio` y el 403 viene realmente de `is_admin()`, no de que RLS
+		// le esconda una fila ajena (que daría 404 — ver el mismo matiz en PerfilService).
+		mockMvc.perform(put("/api/v1/perfiles/{id}", OTRO_USUARIO_TEST_ID).with(jwtDeDuenoNoAdmin)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(Map.of("rol", "admin", "estado", "aprobado"))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.error").value("ACCESO_DENEGADO"));
+	}
+
+	@Test
 	void unaCuentaPendiente_noPuedeAprobarseASiMisma() throws Exception {
 		crearPendienteComoDueno(OTRO_USUARIO_TEST_ID, "X", "empleado");
 

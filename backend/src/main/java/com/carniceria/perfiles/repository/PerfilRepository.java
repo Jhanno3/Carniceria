@@ -24,4 +24,19 @@ public interface PerfilRepository extends JpaRepository<PerfilEntity, UUID> {
 	@Query("update PerfilEntity p set p.rol = :rol, p.estado = :estado where p.id = :id")
 	int actualizarRolYEstado(@Param("id") UUID id, @Param("rol") PerfilEntity.Rol rol,
 			@Param("estado") PerfilEntity.Estado estado);
+
+	// Variante que además fija dueno_id (V10__multi_negocio.sql): se usa al promover a
+	// "dueno" (dueno_id = su propio id) o a "admin" (dueno_id = null). Para "empleado" no
+	// hace falta: su dueno_id ya quedó fijado al registrarse con el código de invitación
+	// (ver PerfilService.crearDesdeMetadata) y esta variante no lo toca.
+	@Modifying(clearAutomatically = true)
+	@Query("update PerfilEntity p set p.rol = :rol, p.estado = :estado, p.duenoId = :duenoId where p.id = :id")
+	int actualizarRolEstadoYDuenoId(@Param("id") UUID id, @Param("rol") PerfilEntity.Rol rol,
+			@Param("estado") PerfilEntity.Estado estado, @Param("duenoId") UUID duenoId);
+
+	// security definer (V10__multi_negocio.sql): valida un código de invitación (el id de
+	// un dueño aprobado) sin pasar por perfiles_select_propio, que le escondería la fila a
+	// quien todavía no tiene ningún perfil propio.
+	@Query(value = "select es_dueno_valido(:candidato)", nativeQuery = true)
+	boolean esDuenoValido(@Param("candidato") UUID candidato);
 }

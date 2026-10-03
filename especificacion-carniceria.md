@@ -52,14 +52,12 @@ Editable por el dueño. Cada corte tiene un PLU que debe coincidir con el config
 | Tapa de asado | Delantero | asado | 1,5 |
 | Falda | Delantero | falda | 4,0 |
 | Bife ancho | Delantero | bifeAncho | 4,0 |
-| Aguja | Delantero | aguja | 7,5 |
 | Paleta | Delantero | paleta | 6,5 |
-| Marucha | Delantero | paleta | 1,5 |
-| Pecho | Delantero | pecho | 3,5 |
-| Cogote | Delantero | cogote | 3,5 |
 | Carne picada / recortes | Ambos | (sin zona) | 6,5 |
 
-Pérdidas de ejemplo: hueso 11 kg, grasa 6 kg, merma 2 kg. Con estos valores la media res de 100 kg cierra exacta (81 kg vendibles, 19 kg de pérdida).
+Aguja, Marucha, Pecho y Cogote no están en la lista: en esta carnicería no se despostan como cortes aparte, van incluidos dentro de otros cortes ya existentes (Paleta/Asado).
+
+Pérdidas de ejemplo: hueso 11 kg, grasa 6 kg, merma 2 kg. Estos valores son solo ilustrativos para "Restablecer ejemplo"; no hace falta que la suma cierre exacta contra el peso de entrada.
 
 ---
 

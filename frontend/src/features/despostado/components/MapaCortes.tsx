@@ -14,7 +14,7 @@ interface MapaCortesProps {
 // Orden esquemático, cabeza a la izquierda (especificacion-carniceria.md, sección 4.1):
 // delantero primero, osobuco en el medio (es de ambos cuartos), trasero al final.
 const ORDEN_ZONAS = [
-  'cogote', 'pecho', 'aguja', 'bifeAncho', 'falda', 'paleta', 'asado',
+  'bifeAncho', 'falda', 'paleta', 'asado',
   'osobuco',
   'lomo', 'bifeAngosto', 'nalga', 'bola', 'vacio', 'matambre', 'cuadril',
 ]

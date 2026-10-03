@@ -1,6 +1,7 @@
 export interface PerfilResponse {
   id: string
   nombre: string | null
-  rol: 'dueno' | 'empleado'
+  rol: 'admin' | 'dueno' | 'empleado'
   estado: 'pendiente' | 'aprobado' | 'rechazado'
+  duenoId: string | null
 }

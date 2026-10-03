@@ -2,8 +2,14 @@ import { useState } from 'react'
 import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
 
+/** Link de invitación de un dueño (ver InvitarEmpleado): `?invita=<id-del-dueño>`. */
+function leerInvitaDuenoId(): string | null {
+  return new URLSearchParams(window.location.search).get('invita')
+}
+
 export function AuthPage() {
-  const [modo, setModo] = useState<'login' | 'registro'>('login')
+  const [invitaDuenoId] = useState(leerInvitaDuenoId)
+  const [modo, setModo] = useState<'login' | 'registro'>(invitaDuenoId ? 'registro' : 'login')
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-fondo-suave-2 p-4">
@@ -11,7 +17,7 @@ export function AuthPage() {
         {modo === 'login' ? (
           <LoginForm onCambiarARegistro={() => setModo('registro')} />
         ) : (
-          <RegisterForm onCambiarALogin={() => setModo('login')} />
+          <RegisterForm onCambiarALogin={() => setModo('login')} invitaDuenoId={invitaDuenoId} />
         )}
       </div>
     </main>
