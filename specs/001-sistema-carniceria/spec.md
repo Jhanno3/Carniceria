@@ -160,6 +160,8 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 
 ~~**US-4.2** — Como dueño, exporto reportes a Excel para mirarlos fuera del sistema.~~ Descartado (decisión del dueño, 2026-10-04, mismo criterio que FR-210 de Fase 2): ningún reporte se exporta a Excel.
 
+**US-4.3** — Como admin, veo el listado completo de todas las cuentas creadas (no solo las pendientes de aprobación), para tener visibilidad total del sistema sin tener que aprobar o rechazar cada una primero. *(Agregado 2026-10-05, a pedido del dueño — no es un reporte de rendimiento, se agrupó en esta fase por pedirse junto con ella.)*
+
 ### 5.2 Requisitos funcionales
 
 | ID | Requisito |
@@ -168,6 +170,7 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 | FR-402 | El sistema genera un reporte de rendimiento agrupado por período (día, semana o mes, a definir en el plan de esta fase). |
 | FR-403 | El sistema genera un reporte de rendimiento agrupado por `medias_reses.categoria` (Novillo, Novillito, Vaquillona, Vaca, Toro, Ternero), para un rango de fechas elegido. Las medias reses sin categoría cargada quedan agrupadas aparte, no se excluyen del reporte. |
 | ~~FR-404~~ | ~~Todo reporte se puede exportar a Excel.~~ Descartado (decisión del dueño, 2026-10-04): no se construye. |
+| FR-405 | El `admin` puede listar todas las cuentas del sistema (cualquier `estado`), con nombre, rol y estado de cada una, en la pantalla "Usuarios". Ningún otro rol tiene acceso (ya lo impone RLS desde `V9__rol_admin.sql`). |
 
 ### 5.3 Casos borde
 

@@ -14,6 +14,17 @@ export interface VentaResponse {
   kg: string
   codigoLeido: string
   anulada: boolean
+  usuarioId: string
+}
+
+// Lo que devuelve `useEscanear` (Fase 3): un escaneo puede quedar confirmado por el
+// backend o, sin conexión, "pendiente de sincronizar" con el resultado del decodificador
+// local — misma forma para que `UltimoEscaneo` no necesite saber de cuál se trata
+// (plan-fase3.md, 3.3).
+export interface VentaConfirmadaOPendiente {
+  corteNombre: string | null
+  kg: number
+  pendiente: boolean
 }
 
 export interface StockCorteResponse {

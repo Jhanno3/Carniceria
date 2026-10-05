@@ -10,6 +10,7 @@ const MENSAJES_DE_ERROR: Record<string, string> = {
   PREFIJO_INVALIDO: 'El código no corresponde a una etiqueta de peso variable.',
   PLU_INEXISTENTE: 'El código no corresponde a ningún corte activo.',
   PESO_CERO: 'El peso leído es cero.',
+  SIN_CONEXION_SIN_CACHE: 'Sin conexión y sin datos para trabajar offline — conectate al menos una vez.',
 }
 
 export function UltimoEscaneo({ resultado }: UltimoEscaneoProps) {
@@ -20,9 +21,9 @@ export function UltimoEscaneo({ resultado }: UltimoEscaneoProps) {
   if (resultado.tipo === 'exito') {
     return (
       <div className="rounded-xl bg-exito-fondo p-3 text-cuerpo text-exito-texto">
-        <p className="font-medium">Descontado del stock</p>
+        <p className="font-medium">{resultado.pendiente ? 'Pendiente de sincronizar' : 'Descontado del stock'}</p>
         <p>
-          {resultado.venta.corteNombre ?? 'Corte desconocido'} · {formatearKg(Number(resultado.venta.kg))}
+          {resultado.corteNombre ?? 'Corte desconocido'} · {formatearKg(resultado.kg)}
         </p>
       </div>
     )

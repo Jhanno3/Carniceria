@@ -2,14 +2,10 @@
 // `string` (nunca `number`), igual que en el backend (research.md, "Jackson 3 en
 // Spring Boot 4") — se parsean con modelo/resumen o shared/formato según haga falta.
 
-export interface CorteResponse {
-  id: string
-  nombre: string
-  plu: number
-  cuarto: 'Delantero' | 'Trasero' | 'Ambos'
-  zonaMapa: string | null
-  activo: boolean
-}
+// Movido a shared/api/types.ts (plan-fase3.md, Bloque 5): lo necesita también
+// `control-diario`. Re-exportado acá para no tocar cada punto de esta feature que ya
+// importaba `CorteResponse` desde './types'.
+export type { CorteResponse } from '../../../shared/api/types'
 
 export interface CorteKgDto {
   corteId: string

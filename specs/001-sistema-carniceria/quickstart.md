@@ -86,3 +86,54 @@ Los pasos 15 a 20 ya están cubiertos por tests de integración existentes:
 (descuento de stock y umbral "queda poco"), `ResumenDiaControllerTest` (conteo del día) y
 `ConfigEtiquetaControllerTest` (validación de rangos). El paso 22 lo cubre
 `VentaControllerTest`/`StockControllerTest` en su variante con usuario `empleado`.
+
+---
+
+# Quickstart — Fase 3: Sin conexión y anulación
+
+Continúa la numeración de Fase 2. Reproduce US-3.1 y US-3.4 de `spec.md` sección 4 y
+`fase3/plan-fase3.md`. Requiere haber hecho antes los pasos 1 a 22 (al menos una venta de
+"Vacío" ya cargada, para que el decodificador offline tenga algo cacheado — ver el paso 23).
+
+## Verificación
+
+23. Con conexión, entrar a **Control diario** (así se cachean `cortes` y `config_etiqueta`
+    para el modo offline) y esperar a que cargue el resumen del día.
+24. Abrir las DevTools del navegador → pestaña **Network** → elegir **Offline** (no alcanza
+    con cortar el wifi de verdad si el navegador cachea respuestas; esto fuerza que todo
+    `fetch` falle igual que sin conexión real).
+25. Escanear el código válido `2000012012501`.
+    - **Esperado:** aparece en "Último escaneo" como antes ("Vacío · 1,250 kg") pero con el
+      título "Pendiente de sincronizar" en vez de "Descontado del stock"; el indicador de
+      pendientes pasa de "Sin pendientes" a "1 venta pendiente de subir"; el campo de
+      escaneo sigue con el foco (FR-201 también vale offline).
+26. Escanear un código con dígito verificador adulterado, ej. `2000012012509`, todavía sin
+    conexión.
+    - **Esperado:** mismo error "código inválido" que online; no se encola nada, el
+      indicador de pendientes no cambia.
+27. Volver a poner la red en **Online** en DevTools.
+    - **Esperado:** en menos de unos segundos (evento `online` del navegador) el indicador
+      de pendientes vuelve a "Sin pendientes"; la venta pendiente del paso 25 ahora aparece
+      en "Ventas de hoy" con su hora real y descontó stock (ver la tabla de Stock).
+28. Como `dueno`, hacer click en "Anular" sobre cualquier venta de la lista (puede ser de
+    hace rato).
+    - **Esperado:** la venta pasa a mostrarse tachada con la etiqueta "Anulada", sin botón;
+      el stock de ese corte vuelve a subir; "Kg vendidos hoy" baja en lo anulado pero
+      "Etiquetas escaneadas hoy" no cambia (`plan-fase3.md` 3.8).
+29. Cerrar sesión, iniciar sesión como `empleado` del mismo negocio, y escanear un código
+    nuevo.
+    - **Esperado:** aparece el botón "Anular" en esa venta (es propia y reciente). Click →
+      se anula igual que en el paso 28.
+30. Como el mismo `empleado`, buscar en la lista una venta de **otro usuario** (del dueño o
+    de otro empleado) o una propia de hace más de 5 minutos.
+    - **Esperado:** esas filas **no muestran** el botón "Anular" (no solo deshabilitado).
+
+## Correspondencia con tests automatizados
+
+Los pasos 25-30 ya están cubiertos por tests automatizados: `VentaControllerTest` (los 6
+casos de anulación del Bloque 2 de `fase3/tasks-fase3.md`), `ResumenDiaControllerTest`
+(paso 28), `decodificadorEtiqueta.test.ts`/`ean13.test.ts` (los mismos códigos de error del
+paso 26), `colaVentas.test.ts` (la cola misma) y `VentasDeHoy.test.tsx` (cuándo se muestra
+el botón, paso 29/30). Lo que el test automatizado no puede probar es la integración real
+con DevTools → Network → Offline y el evento `online` del navegador — por eso siguen siendo
+pasos manuales.

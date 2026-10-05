@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useEscanear } from '../api/useEscanear'
 import { ApiError } from '../../../shared/api/apiFetch'
-import type { VentaResponse } from '../api/types'
+import type { VentaConfirmadaOPendiente } from '../api/types'
 
+// Aplanado (Fase 3): tanto un escaneo confirmado por el backend como uno pendiente de
+// sincronizar (sin id propio todavía, decodificado localmente) caben en la misma forma —
+// ver useEscanear.ts, plan-fase3.md 3.3.
 export type ResultadoEscaneo =
-  | { tipo: 'exito'; venta: VentaResponse }
+  | ({ tipo: 'exito' } & VentaConfirmadaOPendiente)
   | { tipo: 'error'; codigo: string; mensaje: string }
 
 interface CampoEscaneoProps {
@@ -47,8 +50,8 @@ export function CampoEscaneo({ onResultado }: CampoEscaneoProps) {
     escanear.mutate(
       { codigo, idClienteLocal: crypto.randomUUID() },
       {
-        onSuccess: (venta) => {
-          onResultado({ tipo: 'exito', venta })
+        onSuccess: (resultado) => {
+          onResultado({ tipo: 'exito', ...resultado })
           enfocar()
         },
         onError: (error) => {

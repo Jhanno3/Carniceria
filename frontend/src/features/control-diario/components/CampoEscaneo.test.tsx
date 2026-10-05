@@ -4,20 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CampoEscaneo } from './CampoEscaneo'
 import { useEscanear } from '../api/useEscanear'
 import { ApiError } from '../../../shared/api/apiFetch'
-import type { VentaResponse } from '../api/types'
+import type { VentaConfirmadaOPendiente } from '../api/types'
 
 vi.mock('../api/useEscanear')
 
 const useEscanearMock = vi.mocked(useEscanear)
 
-const ventaDeEjemplo: VentaResponse = {
-  id: '1',
-  fechaHora: '2026-10-10T10:00:00-03:00',
-  corteId: 'c1',
+const ventaDeEjemplo: VentaConfirmadaOPendiente = {
   corteNombre: 'Vacío',
-  kg: '1.250',
-  codigoLeido: '2000012012501',
-  anulada: false,
+  kg: 1.25,
+  pendiente: false,
 }
 
 describe('CampoEscaneo', () => {
@@ -61,7 +57,21 @@ describe('CampoEscaneo', () => {
 
     await usuario.type(input, '2000012012501{Enter}')
 
-    expect(onResultado).toHaveBeenCalledWith({ tipo: 'exito', venta: ventaDeEjemplo })
+    expect(onResultado).toHaveBeenCalledWith({ tipo: 'exito', ...ventaDeEjemplo })
+    await waitFor(() => expect(input).toHaveFocus())
+  })
+
+  it('con la red caída, un escaneo válido queda "pendiente" y mantiene el foco (useEscanear ya decodificó local y encoló)', async () => {
+    const pendiente = { corteNombre: 'Vacío', kg: 1.25, pendiente: true }
+    mutate.mockImplementation((_req, { onSuccess }) => onSuccess(pendiente))
+    const onResultado = vi.fn()
+    const usuario = userEvent.setup()
+    render(<CampoEscaneo onResultado={onResultado} />)
+    const input = campo()
+
+    await usuario.type(input, '2000012012501{Enter}')
+
+    expect(onResultado).toHaveBeenCalledWith({ tipo: 'exito', ...pendiente })
     await waitFor(() => expect(input).toHaveFocus())
   })
 
