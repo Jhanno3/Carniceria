@@ -6,12 +6,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
 import com.carniceria.escaneo.service.ConfigEtiquetaInicialService;
 import com.carniceria.shared.NegocioTestFixtures;
 import com.carniceria.shared.security.JwtClaimsHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +66,15 @@ class VentaControllerTest {
 	@Autowired
 	private ConfigEtiquetaInicialService configEtiquetaInicialService;
 
+	@Autowired
+	private CorteRepository corteRepository;
+
+	@Autowired
+	private VentaTestFixtures ventaTestFixtures;
+
 	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	private UUID corteVacioId;
 
 	@BeforeEach
 	void prepararNegocio() {
@@ -71,6 +82,10 @@ class VentaControllerTest {
 		negocioTestFixtures.registrarComoDueno(DUENO_TEST_ID, "Dueño de VentaControllerTest");
 		catalogoInicialService.sembrarSiHaceFalta(DUENO_TEST_ID);
 		configEtiquetaInicialService.sembrarSiHaceFalta(DUENO_TEST_ID);
+		// Por JPA (no jdbcTemplate crudo), mientras las claims de arriba siguen activas: un
+		// SELECT directo no dispara el auto-flush de Hibernate y no vería el INSERT del
+		// catálogo si todavía está sin volcar a la base (mismo criterio que MediaResControllerTest).
+		corteVacioId = corteRepository.findByPlu(12).orElseThrow().getId();
 		jwtClaimsHolder.clear();
 	}
 
@@ -232,5 +247,108 @@ class VentaControllerTest {
 						.param("hasta", LocalDate.now().toString()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
+	void escanear_yListar_incluyenUsuarioId() throws Exception {
+		mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEscaneo(CODIGO_VALIDO, UUID.randomUUID()))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.usuarioId").value(DUENO_TEST_ID.toString()));
+
+		mockMvc.perform(get("/api/v1/ventas").with(jwtDeDueno())
+						.param("desde", LocalDate.now().toString())
+						.param("hasta", LocalDate.now().toString()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].usuarioId").value(DUENO_TEST_ID.toString()));
+	}
+
+	@Test
+	void anular_comoDueno_anulaCualquierVentaSinLimiteDeTiempo() throws Exception {
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		UUID ventaId = ventaTestFixtures.crearVentaDirecta(
+				corteVacioId, EMPLEADO_TEST_ID, DUENO_TEST_ID, CODIGO_VALIDO, Instant.now().minus(10, ChronoUnit.MINUTES));
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(post("/api/v1/ventas/" + ventaId + "/anular").with(jwtDeDueno()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.anulada").value(true));
+	}
+
+	@Test
+	void anular_comoEmpleadoPropiaYReciente_anula() throws Exception {
+		jwtClaimsHolder.set("{\"sub\":\"" + EMPLEADO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		negocioTestFixtures.registrarComoEmpleado(EMPLEADO_TEST_ID, "Empleado de VentaControllerTest", DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		UUID ventaId = ventaTestFixtures.crearVentaDirecta(
+				corteVacioId, EMPLEADO_TEST_ID, DUENO_TEST_ID, CODIGO_VALIDO, Instant.now());
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(post("/api/v1/ventas/" + ventaId + "/anular").with(jwtDeEmpleado()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.anulada").value(true));
+	}
+
+	@Test
+	void anular_comoEmpleadoVentaAjena_devuelve403() throws Exception {
+		jwtClaimsHolder.set("{\"sub\":\"" + EMPLEADO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		negocioTestFixtures.registrarComoEmpleado(EMPLEADO_TEST_ID, "Empleado de VentaControllerTest", DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+		jwtClaimsHolder.set("{\"sub\":\"" + OTRO_DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		negocioTestFixtures.registrarComoEmpleado(
+				OTRO_DUENO_TEST_ID, "Otro empleado de VentaControllerTest", DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		UUID ventaId = ventaTestFixtures.crearVentaDirecta(
+				corteVacioId, EMPLEADO_TEST_ID, DUENO_TEST_ID, CODIGO_VALIDO, Instant.now());
+		jwtClaimsHolder.clear();
+
+		RequestPostProcessor jwtDeOtroEmpleado = jwt().jwt(
+				j -> j.subject(OTRO_DUENO_TEST_ID.toString()).claim("role", "authenticated"));
+		mockMvc.perform(post("/api/v1/ventas/" + ventaId + "/anular").with(jwtDeOtroEmpleado))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.error").value("VENTA_NO_SE_PUEDE_ANULAR"));
+	}
+
+	@Test
+	void anular_comoEmpleadoVentaPropiaDeMasDeCincoMinutos_devuelve403() throws Exception {
+		jwtClaimsHolder.set("{\"sub\":\"" + EMPLEADO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		negocioTestFixtures.registrarComoEmpleado(EMPLEADO_TEST_ID, "Empleado de VentaControllerTest", DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		UUID ventaId = ventaTestFixtures.crearVentaDirecta(
+				corteVacioId, EMPLEADO_TEST_ID, DUENO_TEST_ID, CODIGO_VALIDO, Instant.now().minus(10, ChronoUnit.MINUTES));
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(post("/api/v1/ventas/" + ventaId + "/anular").with(jwtDeEmpleado()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.error").value("VENTA_NO_SE_PUEDE_ANULAR"));
+	}
+
+	@Test
+	void anular_ventaInexistente_devuelve404() throws Exception {
+		mockMvc.perform(post("/api/v1/ventas/" + UUID.randomUUID() + "/anular").with(jwtDeDueno()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.error").value("VENTA_NO_ENCONTRADA"));
+	}
+
+	@Test
+	void anular_dosVecesSeguidas_esIdempotente() throws Exception {
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		UUID ventaId = ventaTestFixtures.crearVentaDirecta(
+				corteVacioId, DUENO_TEST_ID, DUENO_TEST_ID, CODIGO_VALIDO, Instant.now());
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(post("/api/v1/ventas/" + ventaId + "/anular").with(jwtDeDueno()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.anulada").value(true));
+		mockMvc.perform(post("/api/v1/ventas/" + ventaId + "/anular").with(jwtDeDueno()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.anulada").value(true));
 	}
 }

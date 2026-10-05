@@ -95,6 +95,39 @@ class MediaResControllerTest {
 	}
 
 	@Test
+	void cargarEntrada_conCategoriaValida_laDevuelve() throws Exception {
+		Map<String, Object> body = cuerpoDeEjemplo();
+		body.put("categoria", "Novillo");
+
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.categoria").value("Novillo"));
+	}
+
+	@Test
+	void cargarEntrada_sinCategoria_laDevuelveNula() throws Exception {
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEjemplo())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.categoria").isEmpty());
+	}
+
+	@Test
+	void cargarEntrada_conCategoriaInvalida_devuelve400() throws Exception {
+		Map<String, Object> body = cuerpoDeEjemplo();
+		body.put("categoria", "Elefante");
+
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("CATEGORIA_INVALIDA"));
+	}
+
+	@Test
 	void cargarEntrada_conCorteInexistente_devuelve400() throws Exception {
 		Map<String, Object> body = cuerpoDeEjemplo();
 		body.put("cortes", List.of(Map.of("corteId", UUID.randomUUID().toString(), "kg", "10.000")));

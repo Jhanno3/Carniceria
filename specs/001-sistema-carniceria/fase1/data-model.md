@@ -23,7 +23,7 @@ El primer dueño se siembra a mano (hoy, `rol = 'admin'`, `estado = 'aprobado'`)
 |---|---|---|
 | dueno_id | uuid | null permitido, `references auth.users(id)` |
 
-`dueno_id` es "a qué negocio pertenece esta cuenta": para un `dueno`, es su propio `id` (es dueño de sí mismo — simplifica toda política de ahí en más a "¿esta fila es de mi negocio?"); para un `empleado`, es el `id` del dueño que lo invitó; `null` para `admin` (no opera ningún negocio, por decisión explícita — ver sección 9 de `spec.md`... *nota: esta decisión es posterior a esa sección, no está reflejada ahí todavía*) y para una cuenta todavía `pendiente`.
+`dueno_id` es "a qué negocio pertenece esta cuenta": para un `dueno`, es su propio `id` (es dueño de sí mismo — simplifica toda política de ahí en más a "¿esta fila es de mi negocio?"); para un `empleado`, es el `id` del dueño que lo invitó; `null` para `admin` (no opera ningún negocio, por decisión explícita — ver sección 9 de `../spec.md`... *nota: esta decisión es posterior a esa sección, no está reflejada ahí todavía*) y para una cuenta todavía `pendiente`.
 
 Función `mi_negocio_id()` (security definer): devuelve el `dueno_id` del usuario autenticado — la usan todas las políticas de las tablas de negocio (`cortes`, `medias_reses`, `despostado`, `perdidas`) en vez de `is_dueno()` a secas, para que un dueño nunca vea los datos de otro.
 
@@ -58,12 +58,15 @@ Función `mi_negocio_id()` (security definer): devuelve el `dueno_id` del usuari
 | proveedor | text | null |
 | peso_kg | numeric(8,3) | not null, `check (peso_kg > 0)` |
 | precio_kg | numeric(12,2) | null, `check (precio_kg is null or precio_kg > 0)` |
+| categoria | text | null, `check (categoria in ('Novillo','Novillito','Vaquillona','Vaca','Toro','Ternero'))` (`V17__categoria_animal.sql`) |
 | creado_por | uuid | not null, `references auth.users(id)` |
 | creado_en | timestamptz | not null, `default now()` |
 
+`categoria` es opcional y clasifica el animal según la nomenclatura típica del Mercado de Liniers. Se agregó para el reporte "rendimiento por categoría de animal" de Fase 4 (resuelve la nota abierta que tenía `../spec.md` en la sección de Fase 4); no afecta ningún cálculo de Fase 1 ni la estimación automática.
+
 **RLS:** solo `dueno`, acotado a `creado_por = mi_negocio_id()` (`V10__multi_negocio.sql`; antes era `is_dueno()` a secas, lo que hubiera dejado a cualquier dueño ver las medias reses de cualquier otro negocio). No hace falta una columna `dueno_id` propia: nadie salvo el dueño carga medias reses (nunca un empleado, FR-101), así que `creado_por` **ya es** el tenant. El empleado no tiene ninguna política sobre esta tabla: no ve precio_kg ni ninguna otra columna (Principio II).
 
-**No hay columna `estado`.** No existe el concepto de media res "abierta"/"cerrada": una fila de `medias_reses` solo se crea junto con su despostado y pérdidas completos, en una única transacción (ver FR-111/FR-112 de `spec.md` y "Carga atómica" más abajo). Nunca hay una media res a medio cargar en la base.
+**No hay columna `estado`.** No existe el concepto de media res "abierta"/"cerrada": una fila de `medias_reses` solo se crea junto con su despostado y pérdidas completos, en una única transacción (ver FR-111/FR-112 de `../spec.md` y "Carga atómica" más abajo). Nunca hay una media res a medio cargar en la base.
 
 ## despostado
 

@@ -1,8 +1,12 @@
 # Contrato de API — Fase 2: Escaneo y stock
 
-Mismas convenciones que `despostado-api.md`: kilos/importes como `string` (nunca `number`,
-ver el hallazgo de Jackson 3 en `research.md`), errores como `{ "error": "CODIGO", "mensaje": "..." }`,
+Mismas convenciones que `../../fase1/contracts/despostado-api.md`: kilos/importes como `string` (nunca `number`,
+ver el hallazgo de Jackson 3 en `../../fase1/research.md`), errores como `{ "error": "CODIGO", "mensaje": "..." }`,
 toda fecha/hora en `America/Argentina/Buenos_Aires`.
+
+**Incluye los agregados de Fase 3** (`../../fase3/plan-fase3.md`): `POST /ventas/{id}/anular` y el
+campo `usuarioId` en `VentaResponse`, marcados explícitamente más abajo. La cola offline de
+Fase 3 no agrega ningún endpoint nuevo — reusa `POST /ventas` tal cual.
 
 ## `POST /ventas` — registrar un escaneo (FR-201 a FR-204)
 
@@ -28,12 +32,13 @@ mismo valor sirve para detectar un "Enter" duplicado del lector).
   "corteId": "uuid",
   "corteNombre": "Vacío",
   "kg": "1.250",
-  "codigoLeido": "2000012012501"
+  "codigoLeido": "2000012012501",
+  "usuarioId": "uuid"
 }
 ```
 
 `idClienteLocal` repetido → `200 OK` con la misma venta ya registrada (no se vuelve a
-insertar ni a descontar stock — caso borde de `spec.md`, sección 3.3).
+insertar ni a descontar stock — caso borde de `../../spec.md`, sección 3.3).
 
 Errores, en el orden de validación de FR-203 (el primero que falla corta la cadena):
 
@@ -55,14 +60,42 @@ todas las del rango — lo que usa el link "ver todas").
 ```json
 200 OK
 [
-  { "id": "uuid", "fechaHora": "...", "corteNombre": "Vacío", "kg": "1.250", "anulada": false },
+  { "id": "uuid", "fechaHora": "...", "corteNombre": "Vacío", "kg": "1.250", "anulada": false, "usuarioId": "uuid" },
   ...
 ]
 ```
 
 `empleado`: ve todas las ventas del rango **de su propio negocio** (no solo las propias —
-no hay todavía noción de "mías" sin los roles finos de Fase 3), nunca `precio_kg` ni
-costos (no están en este DTO).
+no hay noción de "mías" para *ver*, solo para *anular*, ver abajo), nunca `precio_kg` ni
+costos (no están en este DTO). `usuarioId` (agregado en Fase 3) no es un dato sensible —
+sirve para que el frontend decida cuándo mostrar el botón "Anular" sin intentarlo primero
+(`../../fase3/plan-fase3.md` 3.6).
+
+## `POST /ventas/{id}/anular` — anular una venta (Fase 3, FR-307/308)
+
+Sin body. Nunca borra la fila: siempre un `UPDATE anulada = true` (Principio I).
+
+```json
+200 OK
+{ "id": "uuid", "fechaHora": "...", "corteNombre": "Vacío", "kg": "1.250", "anulada": true, "usuarioId": "uuid" }
+```
+
+Reglas (evaluadas con la hora del **servidor**, `ventas.fecha_hora`, nunca con el reloj de
+quien hace el pedido — caso borde de `../../spec.md` 4.3):
+- `dueno`: puede anular cualquier venta de su negocio, sin límite de tiempo.
+- `empleado`: solo si `usuarioId` de la venta es el suyo **y** pasaron menos de 5 minutos
+  desde `fechaHora`.
+- Anular una venta ya anulada es idempotente (vuelve a quedar `anulada: true`, `200`), si
+  todavía se cumplen las reglas de arriba.
+
+Errores:
+```json
+404 Not Found
+{ "error": "VENTA_NO_ENCONTRADA", "mensaje": "La venta uuid no existe o no es de tu negocio." }
+
+403 Forbidden
+{ "error": "VENTA_NO_SE_PUEDE_ANULAR", "mensaje": "No podés anular esta venta: es de otro usuario o pasaron más de 5 minutos." }
+```
 
 ## `GET /stock` — stock por corte (FR-205, FR-208)
 
@@ -94,8 +127,10 @@ Sin `fecha`, usa hoy (hora Argentina).
 ```
 
 `etiquetasEscaneadasHoy` cuenta **todos** los escaneos válidos del día (filas de `ventas`,
-anuladas incluidas — no hay anulación todavía en esta fase); `stockVendibleTotal` es la
-suma de `stockKg` de `GET /stock`, no acotada al día (el stock es acumulado histórico).
+anuladas incluidas — es una métrica de actividad del mostrador, no de ventas netas).
+`kgVendidosHoy` (desde Fase 3, `../../fase3/plan-fase3.md` 3.8) **excluye** las ventas anuladas, para no
+contradecir a `stockVendibleTotal`: la suma de `stockKg` de `GET /stock`, no acotada al día
+(el stock es acumulado histórico), que ya excluye anuladas desde `stock_por_corte` (Fase 2).
 
 ## `GET /config-etiqueta` / `PUT /config-etiqueta` (FR-209)
 
@@ -121,9 +156,5 @@ se lee/edita la del propio negocio de quien llama.
 `inicioValor`) → `400 CONFIGURACION_ETIQUETA_INVALIDA`. No se valida contra ningún
 código real: es responsabilidad del dueño probar un escaneo real después de guardar.
 
-## `GET /control-diario/exportar?fecha=2026-10-10` (FR-210)
-
-Solo `dueno`. Devuelve un `.xlsx` (`Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`)
-con dos hojas: "Ventas" (mismas columnas que `GET /ventas` de ese día) y "Stock" (mismas
-columnas que `GET /stock`, calculado al momento de exportar — no es una foto histórica del
-`fecha` pedido, el stock siempre es "ahora").
+`GET /control-diario/exportar` (FR-210, exportar a Excel) no se construye — descartado por
+decisión del dueño (2026-10-04), no forma parte de esta fase.

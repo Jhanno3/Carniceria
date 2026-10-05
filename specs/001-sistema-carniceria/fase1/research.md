@@ -1,6 +1,6 @@
 # Investigación — Fase 1: Despostado
 
-Resuelve los puntos técnicos que `plan.md` deja abiertos para esta fase. Ninguno es una decisión de negocio: son detalles de herramienta que no afectan a `constitution.md`.
+Resuelve los puntos técnicos que `plan.md` deja abiertos para esta fase. Ninguno es una decisión de negocio: son detalles de herramienta que no afectan a `../../constitution.md`.
 
 ## Arquitectura en capas (a pedido del dueño)
 
@@ -19,7 +19,7 @@ El frontend refleja la misma idea: la carpeta `calculos/` de cada feature se ren
 
 ## Región real de Supabase (hallazgo al cargar las credenciales)
 
-**Hallazgo:** el proyecto de Supabase que el dueño ya había creado está en **Canada Central** (`ca-central-1`), no en São Paulo como pedía `especificacion-carniceria.md` originalmente. Se le preguntó al dueño y decidió seguir con este proyecto en vez de crear uno nuevo en São Paulo — ver `constitution.md`, sección de restricciones técnicas, para la decisión y su motivo.
+**Hallazgo:** el proyecto de Supabase que el dueño ya había creado está en **Canada Central** (`ca-central-1`), no en São Paulo como pedía `especificacion-carniceria.md` originalmente. Se le preguntó al dueño y decidió seguir con este proyecto en vez de crear uno nuevo en São Paulo — ver `../../constitution.md`, sección de restricciones técnicas, para la decisión y su motivo.
 
 **Cadena de conexión confirmada (probada con `psql`):** Supabase no expone más el host directo `db.<project-ref>.supabase.co` para este proyecto; la conexión funciona vía el *pooler* (Supavisor) de la región:
 
@@ -50,7 +50,7 @@ sslmode:  require
 
 ## Versión real de Spring Boot (hallazgo al generar el proyecto)
 
-**Hallazgo:** al generar el backend, Spring Initializr ya no ofrece ninguna versión 3.x — solo 4.0.x y 4.1.x. `constitution.md` decía "Spring Boot 3.x"; se le preguntó al dueño y eligió actualizar a **Spring Boot 4.1.1** (ver `constitution.md`, actualizado). Como consecuencia, los starters cambiaron de nombre (p. ej. `spring-boot-starter-webmvc` en vez de `spring-boot-starter-web`, `spring-boot-starter-security-oauth2-resource-server` en vez de `spring-boot-starter-oauth2-resource-server`, y cada starter tiene su propio artefacto `-test`). El `pom.xml` generado usa estos nombres nuevos.
+**Hallazgo:** al generar el backend, Spring Initializr ya no ofrece ninguna versión 3.x — solo 4.0.x y 4.1.x. `../../constitution.md` decía "Spring Boot 3.x"; se le preguntó al dueño y eligió actualizar a **Spring Boot 4.1.1** (ver `../../constitution.md`, actualizado). Como consecuencia, los starters cambiaron de nombre (p. ej. `spring-boot-starter-webmvc` en vez de `spring-boot-starter-web`, `spring-boot-starter-security-oauth2-resource-server` en vez de `spring-boot-starter-oauth2-resource-server`, y cada starter tiene su propio artefacto `-test`). El `pom.xml` generado usa estos nombres nuevos.
 
 ## Jackson 3 en Spring Boot 4 (hallazgo al implementar los DTO de despostado)
 

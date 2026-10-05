@@ -53,13 +53,14 @@ Crea, en una sola transacción, la media res, sus filas de `despostado` y sus `p
   "proveedor": "Frigorífico Sur",
   "pesoKg": "100.000",
   "precioKg": "5200.00",
+  "categoria": "Novillo",
   "cortes": [ { "corteId": "uuid", "kg": "3.300" }, ... ],
   "perdidas": { "hueso": "11.000", "grasa": "6.000", "merma": "2.000" }
 }
 // 201 Created
 {
   "id": "uuid", "fecha": "2026-10-02", "proveedor": "Frigorífico Sur",
-  "pesoKg": "100.000", "precioKg": "5200.00",
+  "pesoKg": "100.000", "precioKg": "5200.00", "categoria": "Novillo",
   "despostado": [ { "corteId": "uuid", "kg": "3.300" } ],
   "perdidas": { "hueso": "11.000", "grasa": "6.000", "merma": "2.000" },
   "resumen": {
@@ -68,17 +69,19 @@ Crea, en una sola transacción, la media res, sus filas de `despostado` y sus `p
   }
 }
 ```
-`precioKg` es opcional; si se omite, se guarda `null` (la tarjeta de costo muestra "—" en el frontend, y `resumen.costoTotal`/`costoKgVendible` viajan en `null`). `cortes` puede tener cualquier subconjunto de los cortes activos (los que no se cargaron, simplemente no tienen fila). `resumen` lo calcula el `Model` del backend (capa `modelo/`, ver `research.md`) con las mismas fórmulas que el frontend usa para la vista en vivo antes de guardar — es la versión "oficial" una vez persistido.
+`precioKg` es opcional; si se omite, se guarda `null` (la tarjeta de costo muestra "—" en el frontend, y `resumen.costoTotal`/`costoKgVendible` viajan en `null`). `categoria` es opcional (uno de `Novillo`, `Novillito`, `Vaquillona`, `Vaca`, `Toro`, `Ternero` — clasificación de Mercado de Liniers, `V17__categoria_animal.sql`); si se omite, viaja `null` y la entrada queda fuera del reporte "por categoría" de Fase 4. `cortes` puede tener cualquier subconjunto de los cortes activos (los que no se cargaron, simplemente no tienen fila). `resumen` lo calcula el `Model` del backend (capa `modelo/`, ver `research.md`) con las mismas fórmulas que el frontend usa para la vista en vivo antes de guardar — es la versión "oficial" una vez persistido.
 
 **Validaciones (backend, además de las de la base):**
 - Cada `corteId` debe existir y estar `activo`.
 - Cada `kg` debe ser `> 0` si está presente.
+- `categoria`, si viene, debe ser uno de los 6 valores válidos.
 - No se bloquea el guardado si `sin_asignar_kg ≠ 0`: esa comparación es solo informativa en el frontend (spec, sección 2.2, US-1.2).
 
 **Errores:**
 ```json
 400 Bad Request
 { "error": "CORTE_INEXISTENTE", "mensaje": "El corte uuid no existe o está inactivo." }
+{ "error": "CATEGORIA_INVALIDA", "mensaje": "\"Elefante\" no es una categoría válida (Novillo, Novillito, Vaquillona, Vaca, Toro o Ternero)." }
 ```
 
 ### `GET /medias-reses/{id}`
@@ -88,7 +91,7 @@ Mismo shape que la respuesta de `POST`, incluido `resumen` (se recalcula en cada
 200 OK
 {
   "id": "uuid", "fecha": "2026-10-02", "proveedor": "Frigorífico Sur",
-  "pesoKg": "100.000", "precioKg": "5200.00",
+  "pesoKg": "100.000", "precioKg": "5200.00", "categoria": "Novillo",
   "despostado": [ { "corteId": "uuid", "kg": "3.300" } ],
   "perdidas": { "hueso": "11.000", "grasa": "6.000", "merma": "2.000" },
   "resumen": { "vendibleKg": "81.000", "perdidaKg": "19.000", "sinAsignarKg": "0.000",
@@ -97,7 +100,7 @@ Mismo shape que la respuesta de `POST`, incluido `resumen` (se recalcula en cada
 ```
 
 ### `PUT /medias-reses/{id}`
-Corrige una entrada ya cargada: `proveedor`, `pesoKg`, `precioKg`, y/o la lista completa de `cortes`/`perdidas` (mismo body que `POST`, reemplaza lo anterior en una transacción). Para correcciones posteriores, no para la carga inicial.
+Corrige una entrada ya cargada: `proveedor`, `pesoKg`, `precioKg`, `categoria`, y/o la lista completa de `cortes`/`perdidas` (mismo body que `POST`, reemplaza lo anterior en una transacción). Para correcciones posteriores, no para la carga inicial.
 
 ### `GET /medias-reses?desde=2026-10-02&hasta=2026-10-02`
 Lista entradas de carne, filtrable por rango de `creado_en` (usado por FR-206 para contar las cargadas hoy). Paginada (`page`, `size`) si la lista crece.

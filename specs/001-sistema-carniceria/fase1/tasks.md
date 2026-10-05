@@ -1,6 +1,6 @@
 # Tareas — Fase 1: Despostado
 
-**Entradas:** `plan.md`, `research.md`, `data-model.md`, `contracts/despostado-api.md`, `quickstart.md`.
+**Entradas:** `plan.md`, `research.md`, `data-model.md`, `contracts/despostado-api.md`, `../quickstart.md`.
 **Orden:** TDD — en cada bloque, los tests se escriben y deben fallar antes de la implementación que los hace pasar (Principio III de la constitución).
 **Capas (a pedido del dueño, ver `research.md`):** en cada feature del backend, `controller/` → `service/` → `modelo/` (dominio puro, sin Spring/JPA) → `repository/` → `entity/` (JPA), con `dto/` para los contratos de request/response. El frontend usa la misma idea: `modelo/` (funciones puras) separado de `components/` (UI) y `api/` (hooks + tipos de los DTO).
 **`[P]`** = se puede hacer en paralelo con las otras tareas `[P]` del mismo bloque (tocan archivos distintos, sin dependencia entre ellas). Las tareas sin `[P]` del mismo bloque son secuenciales entre sí.
@@ -11,7 +11,7 @@
 
 - [x] **T001** Crear `/backend` con Spring Initializr (Maven, Java 21): dependencias `spring-boot-starter-webmvc`, `spring-boot-starter-data-jpa`, `spring-boot-starter-validation`, `spring-boot-starter-security-oauth2-resource-server`, `flyway-database-postgresql`, `postgresql`. *(Spring Boot 4.1.1 — Initializr ya no ofrece 3.x; ver constitution.md actualizado.)*
 - [x] **T002** Crear `/frontend` con Vite (plantilla `react-ts`); agregar Tailwind CSS v4, TanStack Query, Vitest, React Testing Library.
-- [x] **T003 [P]** `backend/src/main/resources/application.yml`: datasource a Supabase Postgres (región Canada Central, ver `constitution.md`) y configuración de resource server JWT (`jwk-set-uri`), todo leído de variables de entorno (ninguna credencial literal en el archivo).
+- [x] **T003 [P]** `backend/src/main/resources/application.yml`: datasource a Supabase Postgres (región Canada Central, ver `../../constitution.md`) y configuración de resource server JWT (`jwk-set-uri`), todo leído de variables de entorno (ninguna credencial literal en el archivo).
 - [x] **T004 [P]** Tokens de color y tipografía de `especificacion-carniceria.md` sección 5 en `frontend/src/index.css` vía `@theme` de Tailwind v4 (no hay `tailwind.config.js`: la v4 usa configuración en CSS).
 - [x] **T005 [P]** `.env.example` en la raíz, y `backend/.env`/`frontend/.env` (gitignorados) con las variables en blanco, listas para completar.
 - [x] **T006 [P]** Paquetes del backend creados: `com.carniceria.cortes.{controller,service,entity,dto,repository}`, `com.carniceria.despostado.{controller,service,modelo,entity,dto,repository}`, `com.carniceria.perfiles.{entity,repository}`, `com.carniceria.shared.{security,error}`; y en el frontend `features/despostado/{modelo,components,api}`, `shared/{formato,ui}`.
@@ -93,7 +93,7 @@ Orden según `data-model.md`; cada migración crea su tabla y activa RLS en el m
 
 **Hallazgo:** el `tsconfig` de esta plantilla de Vite tiene `erasableSyntaxOnly` activado (TypeScript 5.x), que prohíbe el azúcar sintáctico de "parameter properties" en constructores (`constructor(public readonly x: string)`) porque no es puramente borrable en la transpilación. Se escribió `ApiError` con los campos declarados aparte.
 
-**Pendiente para cuando se arme `DespostadoPage` (Bloque 8):** ningún bloque de esta fase incluye una pantalla de login, pero `quickstart.md` (paso 1) asume que el dueño ya inició sesión. ~~Falta decidir cómo se obtiene esa sesión en la práctica~~ — resuelto en el Bloque 7b.
+**Pendiente para cuando se arme `DespostadoPage` (Bloque 8):** ningún bloque de esta fase incluye una pantalla de login, pero `../quickstart.md` (paso 1) asume que el dueño ya inició sesión. ~~Falta decidir cómo se obtiene esa sesión en la práctica~~ — resuelto en el Bloque 7b.
 
 ## Bloque 7b — Registro con aprobación previa (a pedido del dueño, fuera del plan original)
 
@@ -126,8 +126,8 @@ No estaba en el alcance original de la Fase 1 (la invitación de empleados era F
 
 ## Bloque 9 — Cierre de fase
 
-- [ ] **T059** Ejecutar manualmente los 14 pasos de `quickstart.md`; corregir cualquier desvío encontrado.
-- [ ] **T060** Revisar `spec.md` sección 9 (verificación contra la constitución) y confirmar que esta implementación no incorporó nada de Fase 2, 3 o 4.
+- [ ] **T059** Ejecutar manualmente los 14 pasos de `../quickstart.md`; corregir cualquier desvío encontrado.
+- [ ] **T060** Revisar `../spec.md` sección 9 (verificación contra la constitución) y confirmar que esta implementación no incorporó nada de Fase 2, 3 o 4.
 
 ---
 

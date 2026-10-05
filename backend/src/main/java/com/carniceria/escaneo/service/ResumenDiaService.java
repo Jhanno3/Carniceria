@@ -39,7 +39,12 @@ public class ResumenDiaService {
 		Instant hasta = fecha.plusDays(1).atStartOfDay(ZONA_ARGENTINA).toInstant().minusNanos(1);
 
 		List<VentaEntity> ventasDelDia = ventaRepository.findByFechaHoraBetweenOrderByFechaHoraDesc(desde, hasta);
+		// kgVendidosHoy es neto (plan-fase3.md 3.8): excluye anuladas, para no contradecir a
+		// stockVendibleTotal (la vista stock_por_corte ya las excluye desde Fase 2).
+		// etiquetasEscaneadasHoy, más abajo, sigue contando todos los escaneos del día — es
+		// actividad del mostrador, no ventas netas.
 		BigDecimal kgVendidosHoy = ventasDelDia.stream()
+				.filter(venta -> !venta.isAnulada())
 				.map(VentaEntity::getKg)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 

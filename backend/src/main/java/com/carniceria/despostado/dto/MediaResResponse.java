@@ -10,6 +10,7 @@ public record MediaResResponse(
 		String proveedor,
 		String pesoKg,
 		String precioKg,
+		String categoria,
 		List<CorteKgDto> despostado,
 		PerdidasDto perdidas,
 		ResumenDto resumen) {

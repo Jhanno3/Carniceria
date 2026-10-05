@@ -1,13 +1,13 @@
 # Tareas — Fase 2: Escaneo y stock
 
-**Entradas:** `plan-fase2.md`, `data-model-fase2.md`, `contracts/control-diario-api.md`, `spec.md` (sección 3).
+**Entradas:** `plan-fase2.md`, `data-model-fase2.md`, `contracts/control-diario-api.md`, `../spec.md` (sección 3).
 **Orden:** TDD — en cada bloque, los tests se escriben y deben fallar antes de la implementación que los hace pasar (Principio III de la constitución).
 **Capas (mismo criterio que Fase 1):** `controller/` → `service/` → `modelo/` (dominio puro, sin Spring/JPA) → `repository/` → `entity/` (JPA), con `dto/` para los contratos. Frontend: `modelo/` (funciones puras, si hace falta) separado de `components/` y `api/`.
 **`[P]`** = se puede hacer en paralelo con las otras tareas `[P]` del mismo bloque (archivos distintos, sin dependencia entre ellas).
 
-Numeración continúa desde `tasks.md` (Fase 1 llegó hasta T060). Los números de migración
+Numeración continúa desde `../fase1/tasks.md` (Fase 1 llegó hasta T060). Los números de migración
 arrancan en `V12`: `V9`-`V11` ya los usó el pivot a multi-negocio (`V9__rol_admin.sql`,
-`V10__multi_negocio.sql`, `V11__fix_dueno_todo_exige_rol.sql`, ver `data-model.md`) que
+`V10__multi_negocio.sql`, `V11__fix_dueno_todo_exige_rol.sql`, ver `../fase1/data-model.md`) que
 pasó **después** de que se escribió `tasks-fase2.md` por primera vez — toda tarea de esta
 fase que toca RLS ya da por hecho ese pivot (acotar por `is_dueno() and ... = mi_negocio_id()`,
 no solo por `is_dueno()` o solo por `mi_negocio_id()`).
@@ -65,47 +65,50 @@ Orden según `data-model-fase2.md`.
 
 - [x] **T086** `entity/ConfigEtiquetaEntity.java` (PK `duenoId`, `@Id` sin `@GeneratedValue`) + `repository/ConfigEtiquetaRepository.java`. Adelantado en Bloque 3 (`VentaService` los necesitaba para decodificar).
 - [x] **T088b** `service/ConfigEtiquetaInicialService.sembrarSiHaceFalta(duenoId)` — adelantado en Bloque 3, enganchado en `PerfilService.obtenerOCrearPropio` junto al sembrado de cortes.
-- [ ] **T085 [P]** `ConfigEtiquetaControllerTest.java`: igual que `CorteControllerTest`/`EstimacionControllerTest` de Fase 1, el test se registra como dueño de prueba (`NegocioTestFixtures`) y llama `ConfigEtiquetaInicialService.sembrarSiHaceFalta` antes de cada caso. `GET` devuelve la fila sembrada; `PUT` actualiza y el `GET` siguiente refleja el cambio; `PUT` con `inicioPlu`/`largoPlu` superpuesto a `inicioValor`/`largoValor` → `400 CONFIGURACION_ETIQUETA_INVALIDA`; `empleado` no puede leer ni escribir (RLS); un segundo negocio de prueba no ve ni puede pisar la config del primero.
-- [ ] **T087** `dto/ConfigEtiquetaDto.java`.
-- [ ] **T088** `service/ConfigEtiquetaService.java` (GET/PUT sobre la fila ya sembrada, + `ConfiguracionEtiquetaInvalidaException` para los rangos superpuestos) + `controller/ConfigEtiquetaController.java`. `usuarioId`/`duenoId` del propio JWT (`@AuthenticationPrincipal Jwt`), igual criterio que el resto de los controllers — nunca viaja en el body ni en la URL.
+- [x] **T085 [P]** `ConfigEtiquetaControllerTest.java` (5 tests): `GET` devuelve la fila sembrada; `PUT` actualiza y el `GET` siguiente refleja el cambio; `PUT` con `inicioPlu`/`largoPlu` superpuesto a `inicioValor`/`largoValor` → `400 CONFIGURACION_ETIQUETA_INVALIDA`; `empleado` no puede leer ni escribir; un segundo negocio no ve ni puede pisar la config del primero.
+- [x] **T087** `dto/ConfigEtiquetaDto.java`.
+- [x] **T088** `service/ConfigEtiquetaService.java` (GET/PUT sobre la fila ya sembrada, `ConfiguracionEtiquetaInvalidaException` para rangos inválidos/superpuestos, `ConfigEtiquetaNoEncontradaException` para el caso defensivo de un dueño sin fila todavía) + `controller/ConfigEtiquetaController.java`. `duenoId` sale siempre del propio JWT, nunca del body ni de la URL. `ConfigEtiquetaRepository.actualizar` es un `UPDATE` explícito (mismo motivo que `CorteRepository.actualizar`: que un `UPDATE` bloqueado por RLS se note como `0` filas, no como éxito silencioso).
 
-## Bloque 6 — Exportar a Excel (usa los Bloques 3 y 4)
+## Bloque 6 — Descartado (decisión del dueño, 2026-10-04)
 
-- [ ] **T089** Agregar dependencia `poi-ooxml` al `pom.xml`.
-- [ ] **T090** `ExportControllerTest.java`: `GET /control-diario/exportar?fecha=` devuelve `200` con el `Content-Type` de `.xlsx` y el archivo tiene 2 hojas ("Ventas", "Stock") con la cantidad de filas esperada para datos conocidos; `empleado` recibe `403`.
-- [ ] **T091** `service/ExportService.java` — arma el workbook a partir de `VentaService.listar()` y `StockService.listar()`, sin recalcular nada.
-- [ ] **T092** Endpoint agregado a `ControlDiarioController.java` (o uno propio, `ExportController.java`).
+- [~] ~~T089-T092~~ Exportar a Excel: no se hace. No se agrega `poi-ooxml` ni ningún
+`ExportService`/`ExportController`; `GET /control-diario/exportar` (FR-210) se saca del
+contrato. Ver `../spec.md` sección 3.2 y `contracts/control-diario-api.md`.
 
 ## Bloque 7 — Frontend: acceso a datos (`api/`)
 
-- [ ] **T093 [P]** `features/control-diario/api/types.ts` — tipos que reflejan `contracts/control-diario-api.md`.
-- [ ] **T094 [P]** `api/useEscanear.ts` — mutation sobre `POST /ventas`; genera `idClienteLocal` con `crypto.randomUUID()` en el momento de capturar el código, antes de mandar el pedido (3.1/3.2 de `plan-fase2.md`); invalida `stock` y `resumen` al tener éxito.
-- [ ] **T095 [P]** `api/useVentas.ts`, `api/useStock.ts`, `api/useResumenDia.ts` — hooks de lectura sobre sus endpoints, con refetch periódico razonable (ej. cada 10-15 s) para que el mostrador vea ventas de otro dispositivo sin recargar.
-- [ ] **T096 [P]** `features/ajustes/api/useConfigEtiqueta.ts`, `useActualizarConfigEtiqueta.ts`.
+- [x] **T093 [P]** `features/control-diario/api/types.ts` — tipos que reflejan `contracts/control-diario-api.md`.
+- [x] **T094 [P]** `api/useEscanear.ts` — mutation sobre `POST /ventas`. El `idClienteLocal` lo genera quien captura el escaneo (`CampoEscaneo`, Bloque 8), no el hook: si lo generara acá, cada llamada tendría un id distinto y un "doble Enter" del lector nunca se podría deduplicar. Invalida `stock`/`resumen-dia`/`ventas` al tener éxito.
+- [x] **T095 [P]** `api/useVentas.ts`, `api/useStock.ts`, `api/useResumenDia.ts` — hooks de lectura con `refetchInterval` de 15 s para que el mostrador vea ventas de otro dispositivo sin recargar.
+- [x] **T096 [P]** `features/ajustes/api/useConfigEtiqueta.ts`, `useActualizarConfigEtiqueta.ts`, `types.ts`.
+
+Build y typecheck limpios, 40/40 tests de frontend siguen OK (estos hooks no tienen test propio, mismo criterio que el Bloque 7 de la Fase 1).
 
 ## Bloque 8 — Frontend: componentes de UI
 
-- [ ] **T097 [P]** `CampoEscaneo.test.tsx`: el input mantiene el foco después de un escaneo (éxito o error) y después de un click afuera; `Enter` dispara el escaneo con el valor acumulado y limpia el campo.
-- [ ] **T098 [P]** `UltimoEscaneo.test.tsx`: muestra "Descontado del stock" en verde con el detalle del corte/peso; muestra el motivo en rojo ante cada uno de los 4 errores.
-- [ ] **T099 [P]** `ResumenDia.test.tsx`: las 4 cifras de FR-206 con formato es-AR.
-- [ ] **T100 [P]** `VentasDeHoy.test.tsx`: lista más reciente arriba, link "ver todas".
-- [ ] **T101 [P]** `TablaStock.test.tsx`: fila con `quedaPoco` se marca en naranja **y** con una etiqueta de texto "Queda poco" (nada depende solo del color, Principio VI — mismo criterio que la tabla de cortes en Fase 1).
-- [ ] **T102 [P]** `FormularioConfigEtiqueta.test.tsx`: carga los valores actuales, guarda y muestra el error de rango superpuesto si el backend lo rechaza.
-- [ ] **T103–T108** Los 6 componentes, implementación.
-- [ ] **T109** `ControlDiarioPage.tsx`: ensambla `CampoEscaneo` + `UltimoEscaneo` + `ResumenDia` (4 tarjetas) + `VentasDeHoy` + `TablaStock`, con el botón "Exportar a Excel" (`<a href>` directo al endpoint, sin pasar por `fetch`, para que el navegador maneje la descarga).
-- [ ] **T110** `AjustesPage.tsx`: `FormularioConfigEtiqueta`, visible solo para `dueno` (mismo patrón de `App.tsx` que ya decide qué mostrar según rol, Fase 1 Bloque 7b).
-- [ ] **T111** Cablear la navegación en pastillas de `especificacion-carniceria.md` sección 4 ("Despostado" / "Control diario") en `App.tsx`.
-- [ ] **T112** Checklist de accesibilidad (mismo chequeo que T058 de Fase 1): campo de escaneo en 56 px, contraste de "Queda poco", foco visible, `<label>` en todo campo nuevo.
+- [x] **T097 [P]** `CampoEscaneo.test.tsx` (5 tests): foco al montar; `Enter` dispara el escaneo con el valor acumulado y limpia el campo; mantiene el foco después de éxito, de error, y después de un click en cualquier otro lado de la pantalla.
+- [x] **T098 [P]** `UltimoEscaneo.test.tsx` (6 tests): "Descontado del stock" en verde con corte y peso; motivo en rojo para cada uno de los 4 errores (con mensajes propios por código, no el `mensaje` crudo del backend).
+- [x] **T099 [P]** `ResumenDia.test.tsx`: las 4 cifras de FR-206 con formato es-AR.
+- [x] **T100 [P]** `VentasDeHoy.test.tsx` (3 tests): respeta el orden recibido del backend (no reordena), "Ver todas" expande la lista completa sin pedir de nuevo al backend (recorte puramente local, `slice` sobre lo que ya se tiene).
+- [x] **T101 [P]** `TablaStock.test.tsx`: fila con `quedaPoco` se marca en naranja **y** con la etiqueta de texto "Queda poco" (nada depende solo del color).
+- [x] **T102 [P]** `FormularioConfigEtiqueta.test.tsx` (3 tests): carga los valores actuales, guarda, muestra el error de rango superpuesto si el backend lo rechaza.
+- [x] **T103–T108** Los 6 componentes, implementación. `CampoEscaneo` y `FormularioConfigEtiqueta` son dueños de sus propios hooks (como `DespostadoPage` en Fase 1); `ResumenDia`/`VentasDeHoy`/`TablaStock`/`UltimoEscaneo` son presentacionales puros, reciben los datos por props.
+- [x] **T109** `ControlDiarioPage.tsx`: ensambla `CampoEscaneo` + `UltimoEscaneo` + `ResumenDia` + `VentasDeHoy` + `TablaStock`.
+- [x] **T110** `AjustesPage.tsx`: `FormularioConfigEtiqueta`.
+- [x] **T111** Cableado en `App.tsx`: la condición para mostrar Inicio/Despostado/Ajustes es "opera su propio negocio" (`duenoId === id`, no `rol === 'dueno'` a secas — cubre también al admin con negocio de prueba); "Control diario" la ve cualquiera (admin-con-negocio, dueño, o empleado); un empleado ya **no** ve la pantalla de placeholder — entra directo a Control diario.
+- [x] **T112** Checklist de accesibilidad: campo de escaneo en 56 px (`h-14`), "Queda poco" con texto además del color, `<label>` en todo campo nuevo (incluido el `select` de `tipoValor`), ningún `outline-none` que tape el foco por defecto del navegador (mismo criterio que el resto del repo, que no sobreescribe el foco en ningún lado).
 
-## Bloque 9 — Opcional, fuera del camino crítico (3.6 de `plan-fase2.md`)
+Build y typecheck limpios, 60/60 tests de frontend (40 de antes + 20 nuevos). No pude probarlo en un navegador real desde esta sesión — recomiendo abrir `http://localhost:5173` y escanear `2000012012501` (PLU 12 del catálogo de ejemplo) para confirmar el flujo de punta a punta antes de darlo por cerrado.
 
-- [ ] **T113 [opcional]** Botón "Usar cámara del celular" en `CampoEscaneo`: evaluar una librería de lectura de barcode por cámara (ej. `@zxing/browser`) recién acá, no antes — no tiene FR propio más allá del botón alternativo de la sección 4.2 de la especificación.
+## Bloque 9 — Descartado (decisión del dueño, 2026-10-04)
+
+- [~] ~~T113~~ Botón "Usar cámara del celular": no se hace. El mostrador escanea siempre con un lector de código de barras USB físico (el mismo supuesto de FR-201/`CampoEscaneo`, sección 4.2 de la especificación), nunca con la cámara del celular. No evaluar `@zxing/browser` ni ninguna librería de lectura por cámara.
 
 ## Bloque 10 — Cierre de fase
 
-- [ ] **T114** Agregar a `quickstart.md` los pasos manuales de Control diario (escanear un código válido, uno inválido, ver stock bajar, exportar a Excel) continuando la numeración existente.
-- [ ] **T115** Ejecutar `quickstart.md` completo (Fase 1 + los pasos nuevos) de punta a punta; corregir cualquier desvío.
-- [ ] **T116** Revisar `spec.md` sección 3 y confirmar que esta implementación no incorporó nada de Fase 3 (anulación, offline) ni Fase 4 (reportes).
+- [x] **T114** Agregar a `../quickstart.md` los pasos manuales de Control diario (escanear un código válido, uno inválido, ver stock bajar) continuando la numeración existente. Pasos 15-22, con los mismos códigos de ejemplo que usan `VentaControllerTest`/`StockControllerTest` (PLU 12 = Vacío).
+- [ ] **T115** Ejecutar `../quickstart.md` completo (Fase 1 + los pasos nuevos) de punta a punta; corregir cualquier desvío. Pendiente: requiere clickear la UI real con el back y el front levantados — no lo puede hacer esta sesión por sí sola.
+- [x] **T116** Revisado: grep sin resultados de `anular`/`IndexedDB`/`offline`/`cola` en `backend/.../escaneo` y `frontend/.../control-diario`. `VentaEntity.anulada` es solo la columna que ya preveía `data-model-fase2.md`, sin ningún endpoint ni lógica de anulación — no hay nada de Fase 3 (anulación, cola offline) ni de Fase 4 (reportes) en esta implementación.
 
 ---
 
@@ -117,9 +120,8 @@ Bloque 1 (migraciones)
   → Bloque 4 (stock/resumen, no depende del Bloque 3)    │
   → Bloque 5 (config_etiqueta, independiente)             │
                                                             → Bloque 3 (ventas, usa Bloque 2)
-                                                                → Bloque 6 (exportar, usa 3 y 4)
-Bloque 7 (hooks, apunta a la API real de 3/4/5/6)
-Bloque 8 (UI, usa Bloque 7) → Bloque 9 (opcional) → Bloque 10 (cierre)
+Bloque 7 (hooks, apunta a la API real de 3/4/5)
+Bloque 8 (UI, usa Bloque 7) → Bloque 10 (cierre) — Bloques 6 y 9 descartados, no se hacen
 ```
 
 El Bloque 2 (modelo/ del decodificador) no toca Spring ni la base: puede arrancar apenas

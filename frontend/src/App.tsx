@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { AjustesPage } from './features/ajustes/AjustesPage'
 import { AuthPage } from './features/auth/AuthPage'
+import { ControlDiarioPage } from './features/control-diario/ControlDiarioPage'
 import { DespostadoPage } from './features/despostado/DespostadoPage'
 import { InicioPage } from './features/inicio/InicioPage'
 import { usePerfilPropio } from './features/perfiles/api/usePerfilPropio'
 import { UsuariosPage } from './features/perfiles/UsuariosPage'
 import { supabase } from './shared/supabase/cliente'
+
+type Seccion = 'inicio' | 'despostado' | 'control-diario' | 'ajustes' | 'usuarios'
 
 function CerrarSesion() {
   return (
@@ -29,15 +33,19 @@ function EstadoDeCuenta({ mensaje }: { mensaje: string }) {
 }
 
 function NavOperativa({
+  mostrarInicioYDespostado,
+  mostrarAjustes,
   mostrarUsuarios,
   seccion,
   onCambiarSeccion,
 }: {
+  mostrarInicioYDespostado: boolean
+  mostrarAjustes: boolean
   mostrarUsuarios: boolean
-  seccion: 'inicio' | 'despostado' | 'usuarios'
-  onCambiarSeccion: (s: 'inicio' | 'despostado' | 'usuarios') => void
+  seccion: Seccion
+  onCambiarSeccion: (s: Seccion) => void
 }) {
-  function pastilla(id: 'inicio' | 'despostado' | 'usuarios', etiqueta: string) {
+  function pastilla(id: Seccion, etiqueta: string) {
     const activa = seccion === id
     return (
       <button
@@ -53,8 +61,10 @@ function NavOperativa({
   return (
     <nav className="flex items-center justify-between border-b border-borde p-4">
       <div className="flex gap-2">
-        {pastilla('inicio', 'Inicio')}
-        {pastilla('despostado', 'Despostado')}
+        {mostrarInicioYDespostado && pastilla('inicio', 'Inicio')}
+        {mostrarInicioYDespostado && pastilla('despostado', 'Despostado')}
+        {pastilla('control-diario', 'Control diario')}
+        {mostrarAjustes && pastilla('ajustes', 'Ajustes')}
         {mostrarUsuarios && pastilla('usuarios', 'Usuarios')}
       </div>
       <button
@@ -70,7 +80,7 @@ function NavOperativa({
 
 function AppAutenticada() {
   const { data: perfil, isLoading, isError, error } = usePerfilPropio(true)
-  const [seccion, setSeccion] = useState<'inicio' | 'despostado' | 'usuarios'>('inicio')
+  const [seccion, setSeccion] = useState<Seccion>('inicio')
 
   if (isError) {
     return (
@@ -92,20 +102,47 @@ function AppAutenticada() {
     return <EstadoDeCuenta mensaje="Tu solicitud fue rechazada. Consultá con el administrador." />
   }
 
-  if (perfil.rol === 'admin' || perfil.rol === 'dueno') {
-    const esAdmin = perfil.rol === 'admin'
+  const esAdmin = perfil.rol === 'admin'
+  // "Dueño de sí mismo" (duenoId === su propio id), no "rol === dueno" a secas: cubre
+  // tanto a un dueño real como a un admin que también opera su propio negocio de prueba
+  // (ver InvitarEmpleado/InicioPage) — ambos ven Inicio/Despostado/Control diario/Ajustes.
+  const operaNegocio = perfil.duenoId === perfil.id
+  const esEmpleado = perfil.rol === 'empleado'
+
+  if (esAdmin || operaNegocio || esEmpleado) {
+    // Qué secciones puede ver esta cuenta, y a cuál cae por defecto si `seccion` (el
+    // estado, que arranca en 'inicio') no es una de las suyas — ej. un admin puro
+    // (sin negocio propio) nunca ve "inicio", así que no puede quedar colgado ahí.
+    const seccionesDisponibles: Seccion[] = [
+      ...(operaNegocio ? (['inicio', 'despostado'] as const) : []),
+      'control-diario',
+      ...(operaNegocio ? (['ajustes'] as const) : []),
+      ...(esAdmin ? (['usuarios'] as const) : []),
+    ]
+    const porDefecto: Seccion = operaNegocio ? 'inicio' : esEmpleado ? 'control-diario' : 'usuarios'
+    const seccionEfectiva = seccionesDisponibles.includes(seccion) ? seccion : porDefecto
+
     return (
       <>
-        <NavOperativa mostrarUsuarios={esAdmin} seccion={seccion} onCambiarSeccion={setSeccion} />
-        {seccion === 'inicio' && <InicioPage />}
-        {seccion === 'despostado' && <DespostadoPage onIrAInicio={() => setSeccion('inicio')} />}
-        {seccion === 'usuarios' && esAdmin && <UsuariosPage />}
+        <NavOperativa
+          mostrarInicioYDespostado={operaNegocio}
+          mostrarAjustes={operaNegocio}
+          mostrarUsuarios={esAdmin}
+          seccion={seccionEfectiva}
+          onCambiarSeccion={setSeccion}
+        />
+        {seccionEfectiva === 'inicio' && <InicioPage />}
+        {seccionEfectiva === 'despostado' && <DespostadoPage onIrAInicio={() => setSeccion('inicio')} />}
+        {seccionEfectiva === 'control-diario' && <ControlDiarioPage />}
+        {seccionEfectiva === 'ajustes' && <AjustesPage />}
+        {seccionEfectiva === 'usuarios' && <UsuariosPage />}
       </>
     )
   }
 
-  // Empleado aprobado — Control diario llega en la Fase 2.
-  return <EstadoDeCuenta mensaje="Tu cuenta está aprobada. Todavía no hay nada para mostrarte acá." />
+  // No admin, no dueño de ningún negocio, no empleado de nadie: estado inconsistente
+  // (ej. un "dueno" sin dueno_id todavía, entre que lo aprueban y que carga su catálogo).
+  return <EstadoDeCuenta mensaje="Tu cuenta está aprobada, pero todavía no tiene un negocio asociado." />
 }
 
 function App() {

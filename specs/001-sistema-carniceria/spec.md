@@ -103,7 +103,7 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 | FR-207 | "Ventas de hoy" lista hora, corte y kilos, más reciente primero, con enlace a ver el listado completo. |
 | FR-208 | La tabla de stock por corte marca en naranja, con la etiqueta "Queda poco", todo corte cuyo stock sea menor al 15 % de lo despostado para ese corte. |
 | FR-209 | Existe una pantalla de ajustes donde el dueño edita `config_etiqueta` (prefijo, posición y largo del PLU, posición y largo del valor, tipo de valor, decimales) sin necesidad de un cambio de código. |
-| FR-210 | "Exportar a Excel" genera un archivo con las ventas y el stock del día. |
+| ~~FR-210~~ | ~~"Exportar a Excel" genera un archivo con las ventas y el stock del día.~~ Descartado (decisión del dueño, 2026-10-04): no se construye. |
 
 ### 3.3 Casos borde
 
@@ -158,7 +158,7 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 
 **US-4.1** — Como dueño, veo el rendimiento por proveedor y por período para decidir a quién comprarle.
 
-**US-4.2** — Como dueño, exporto reportes a Excel para mirarlos fuera del sistema.
+~~**US-4.2** — Como dueño, exporto reportes a Excel para mirarlos fuera del sistema.~~ Descartado (decisión del dueño, 2026-10-04, mismo criterio que FR-210 de Fase 2): ningún reporte se exporta a Excel.
 
 ### 5.2 Requisitos funcionales
 
@@ -166,13 +166,14 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 |---|---|
 | FR-401 | El sistema genera un reporte de rendimiento (`rendimiento_%`, `costo_kg_vendible` promedio) agrupado por `medias_reses.proveedor`, para un rango de fechas elegido. |
 | FR-402 | El sistema genera un reporte de rendimiento agrupado por período (día, semana o mes, a definir en el plan de esta fase). |
-| FR-403 | Todo reporte se puede exportar a Excel. |
+| FR-403 | El sistema genera un reporte de rendimiento agrupado por `medias_reses.categoria` (Novillo, Novillito, Vaquillona, Vaca, Toro, Ternero), para un rango de fechas elegido. Las medias reses sin categoría cargada quedan agrupadas aparte, no se excluyen del reporte. |
+| ~~FR-404~~ | ~~Todo reporte se puede exportar a Excel.~~ Descartado (decisión del dueño, 2026-10-04): no se construye. |
 
 ### 5.3 Casos borde
 
 - Rango de fechas sin medias reses cerradas: el reporte se muestra vacío con un mensaje, no como error.
 
-> **Nota:** la especificación original (sección 9, Fase 4) menciona también un reporte "por categoría de animal", pero el modelo de datos de la sección 8.1 no define ningún campo de categoría en `medias_reses`. Queda como pregunta abierta (sección 7 de esta spec) antes de plantear el plan de Fase 4.
+> **Resuelto (decisión del dueño, 2026-10-04):** la pregunta abierta sobre el reporte "por categoría de animal" (sección 9 de la especificación original) se resolvió agregando una columna real `categoria` a `medias_reses` (`V17__categoria_animal.sql`, ver `fase1/data-model.md`), opcional, con la clasificación típica del Mercado de Liniers. Ver FR-403 arriba y `fase1/contracts/despostado-api.md` para el campo en la API de carga.
 
 ---
 
@@ -229,9 +230,8 @@ No se detectaron contradicciones entre esta spec y la constitución.
 ## 10. Preguntas abiertas
 
 - **Marca/modelo de la balanza y formato exacto de su etiqueta EAN-13**: no bloquea esta spec porque FR-202 exige que el formato sea configurable (`config_etiqueta`) desde el día uno.
-- **"Categoría de animal" en los reportes de Fase 4** (sección 5.3): la especificación la menciona pero el modelo de datos no tiene ese campo. Antes de planificar la Fase 4 hay que decidir si se agrega una columna a `medias_reses` (y vía qué migración) o si se descarta ese reporte.
 - **Agrupación por período en FR-402** (día/semana/mes): a definir en el plan de Fase 4.
 
 ---
 
-**Siguiente paso:** `plan.md` por fase, empezando por la Fase 1 (Despostado), verificando contra la sección 9 de este documento antes de generar tareas.
+**Siguiente paso:** `fase1/plan.md` por fase (`fase2/plan-fase2.md`, `fase3/plan-fase3.md`, ...), empezando por la Fase 1 (Despostado), verificando contra la sección 9 de este documento antes de generar tareas.

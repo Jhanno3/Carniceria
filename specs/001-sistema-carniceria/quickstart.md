@@ -46,3 +46,43 @@ Los pasos 5, 6, 10, 11 y 12 deben existir también como tests automatizados (no 
 - Test de las funciones puras de cálculo, con el ejemplo de 100 kg / $5.200 → $6.420 (Principio III).
 - Test de integración de `POST /medias-reses` que verifica persistencia atómica y, con un usuario `empleado`, verifica que la RLS bloquea la lectura.
 - Test de integración de `GET /medias-reses/estimacion` que verifica el promedio histórico y el `409 SIN_HISTORIAL` cuando no hay ninguna entrada cargada todavía.
+
+---
+
+# Quickstart — Fase 2: Escaneo y stock
+
+Continúa la numeración de la fase anterior. Reproduce US-2.1 a US-2.3 de `spec.md` y el
+contrato de `fase2/contracts/control-diario-api.md`. Requiere haber hecho antes los pasos 1 a 14
+(ya existe al menos una media res cargada, si no "Vacío" no tiene stock que mostrar).
+
+Los códigos de ejemplo usan la configuración de etiqueta por defecto (prefijo 20-29, PLU en
+las posiciones 2-6, peso en las posiciones 7-11 con 3 decimales) y el PLU 12 = Vacío
+sembrado por `CatalogoInicialService` — los mismos valores que usan
+`VentaControllerTest`/`StockControllerTest`.
+
+## Verificación
+
+15. Ir a **Control diario** y escanear (tipear + Enter, simulando el lector) el código `2000012012501`.
+    - **Esperado:** aparece en "Último escaneo" como "Vacío · 1,250 kg", con fecha/hora actual; el resumen del día suma 1 a "Etiquetas escaneadas hoy" y 1,250 kg a "Kg vendidos hoy".
+16. Escanear de nuevo el **mismo** evento (mismo `idClienteLocal` — en la práctica, doble "Enter" del lector sobre la misma lectura).
+    - **Esperado:** no se duplica la venta ni se descuenta stock dos veces; el resumen no cambia.
+17. Escanear un código con dígito verificador adulterado, ej. `2000012012509`.
+    - **Esperado:** error visible "código inválido" (`DIGITO_VERIFICADOR_INVALIDO`), nada se persiste, el resumen no cambia.
+18. Escanear un código con PLU inexistente, ej. `2000099010001`.
+    - **Esperado:** error `PLU_INEXISTENTE`, nada se persiste.
+19. Ir a la tabla de **Stock** y ubicar "Vacío".
+    - **Esperado:** `vendidoKg` subió en 1,250 kg respecto de antes del paso 15; `stockKg = entradoKg - vendidoKg`. Si queda por debajo del 15 % de lo entrado, la fila se marca "queda poco".
+20. Ir a **Ajustes** → configuración de etiqueta, y guardar un rango inconsistente (ej. que el largo de PLU se superponga con el inicio de valor).
+    - **Esperado:** `400 CONFIGURACION_ETIQUETA_INVALIDA`, no se guarda; el formulario muestra el error.
+21. Corregir y guardar una configuración válida (puede ser la misma por defecto).
+    - **Esperado:** se guarda; un escaneo posterior con un código que respete esa configuración se sigue decodificando bien.
+22. Cerrar sesión, iniciar sesión como `empleado` del mismo negocio y repetir el paso 15.
+    - **Esperado:** el empleado puede escanear y ver stock/ventas del negocio, pero no ve `precio_kg` ni ningún costo en ninguna pantalla, y no tiene acceso a **Ajustes** (solo `dueno`, FR-209).
+
+## Correspondencia con tests automatizados
+
+Los pasos 15 a 20 ya están cubiertos por tests de integración existentes:
+`VentaControllerTest` (escaneo válido/duplicado/4 tipos de error), `StockControllerTest`
+(descuento de stock y umbral "queda poco"), `ResumenDiaControllerTest` (conteo del día) y
+`ConfigEtiquetaControllerTest` (validación de rangos). El paso 22 lo cubre
+`VentaControllerTest`/`StockControllerTest` en su variante con usuario `empleado`.

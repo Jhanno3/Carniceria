@@ -55,10 +55,11 @@ public class MediaResService {
 	public MediaResResponse cargarEntrada(CargarEntradaRequest request, UUID usuarioId) {
 		BigDecimal pesoKg = parsearPeso(request.pesoKg());
 		BigDecimal precioKg = BigDecimals.parse(request.precioKg());
+		MediaResEntity.Categoria categoria = parsearCategoria(request.categoria());
 		validarCortes(request.cortesOVacio());
 
 		MediaResEntity mediaRes = new MediaResEntity(
-				LocalDate.now(ZONA_ARGENTINA), request.proveedor(), pesoKg, precioKg,
+				LocalDate.now(ZONA_ARGENTINA), request.proveedor(), pesoKg, precioKg, categoria,
 				usuarioId, Instant.now());
 		mediaRes = mediaResRepository.save(mediaRes);
 
@@ -73,11 +74,13 @@ public class MediaResService {
 				.orElseThrow(() -> new MediaResNoEncontradaException(id));
 		BigDecimal pesoKg = parsearPeso(request.pesoKg());
 		BigDecimal precioKg = BigDecimals.parse(request.precioKg());
+		MediaResEntity.Categoria categoria = parsearCategoria(request.categoria());
 		validarCortes(request.cortesOVacio());
 
 		mediaRes.setProveedor(request.proveedor());
 		mediaRes.setPesoKg(pesoKg);
 		mediaRes.setPrecioKg(precioKg);
+		mediaRes.setCategoria(categoria);
 
 		despostadoRepository.deleteByMediaResId(id);
 		perdidaRepository.deleteByMediaResId(id);
@@ -113,6 +116,18 @@ public class MediaResService {
 				.map(e -> new CorteKgEstimadoDto(e.getKey(), BigDecimals.aTexto(e.getValue())))
 				.toList();
 		return new EstimacionResponse(cortes);
+	}
+
+	/** Opcional (FR de Fase 4): null si no vino nada, error 400 si vino algo que no matchea. */
+	private MediaResEntity.Categoria parsearCategoria(String categoria) {
+		if (categoria == null || categoria.isBlank()) {
+			return null;
+		}
+		try {
+			return MediaResEntity.Categoria.valueOf(categoria);
+		} catch (IllegalArgumentException e) {
+			throw new CategoriaInvalidaException(categoria);
+		}
 	}
 
 	private BigDecimal parsearPeso(String pesoKgTexto) {
@@ -183,6 +198,7 @@ public class MediaResService {
 		return new MediaResResponse(
 				mediaRes.getId(), mediaRes.getFecha(), mediaRes.getProveedor(),
 				BigDecimals.aTexto(mediaRes.getPesoKg()), BigDecimals.aTexto(mediaRes.getPrecioKg()),
+				mediaRes.getCategoria() == null ? null : mediaRes.getCategoria().name(),
 				despostadoDto, PerdidasDto.de(perdidas), ResumenDto.de(resumen));
 	}
 

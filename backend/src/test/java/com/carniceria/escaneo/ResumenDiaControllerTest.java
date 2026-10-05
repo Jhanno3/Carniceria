@@ -104,6 +104,34 @@ class ResumenDiaControllerTest {
 	}
 
 	@Test
+	void ventaAnulada_noCuentaParaKgVendidosHoyPeroSiParaEtiquetasEscaneadasHoy() throws Exception {
+		Map<String, Object> primerEscaneo = Map.of("codigo", CODIGO_VACIO, "idClienteLocal", UUID.randomUUID().toString());
+		String respuesta = mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(primerEscaneo)))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		String ventaAAnularId = objectMapper.readTree(respuesta).get("id").asText();
+
+		Map<String, Object> segundoEscaneo = Map.of("codigo", CODIGO_VACIO, "idClienteLocal", UUID.randomUUID().toString());
+		mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(segundoEscaneo)))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(post("/api/v1/ventas/" + ventaAAnularId + "/anular").with(jwtDeDueno()))
+				.andExpect(status().isOk());
+
+		// FR-206, plan-fase3.md 3.8: kgVendidosHoy es neto (excluye la anulada, 1,250 kg de
+		// las 2,500 escaneadas), etiquetasEscaneadasHoy sigue contando los 2 escaneos —
+		// es actividad del mostrador, no ventas netas.
+		mockMvc.perform(get("/api/v1/control-diario/resumen").with(jwtDeDueno()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.kgVendidosHoy").value("1.250"))
+				.andExpect(jsonPath("$.etiquetasEscaneadasHoy").value(2));
+	}
+
+	@Test
 	void conFechaSinActividad_devuelveTodoEnCero() throws Exception {
 		mockMvc.perform(get("/api/v1/control-diario/resumen").with(jwtDeDueno())
 						.param("fecha", LocalDate.now().minusDays(10).toString()))

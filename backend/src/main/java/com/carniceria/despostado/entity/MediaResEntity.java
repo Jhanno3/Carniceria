@@ -2,6 +2,8 @@ package com.carniceria.despostado.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,6 +16,12 @@ import java.util.UUID;
 @Entity
 @Table(name = "medias_reses")
 public class MediaResEntity {
+
+	// Clasificación típica de Mercado de Liniers (V17__categoria_animal.sql) — para el
+	// reporte "por categoría de animal" de Fase 4 (spec.md, nota de la sección 5.3).
+	public enum Categoria {
+		Novillo, Novillito, Vaquillona, Vaca, Toro, Ternero
+	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -30,6 +38,9 @@ public class MediaResEntity {
 	@Column(name = "precio_kg")
 	private BigDecimal precioKg;
 
+	@Enumerated(EnumType.STRING)
+	private Categoria categoria;
+
 	@Column(name = "creado_por", nullable = false)
 	private UUID creadoPor;
 
@@ -40,11 +51,12 @@ public class MediaResEntity {
 	}
 
 	public MediaResEntity(LocalDate fecha, String proveedor, BigDecimal pesoKg, BigDecimal precioKg,
-			UUID creadoPor, Instant creadoEn) {
+			Categoria categoria, UUID creadoPor, Instant creadoEn) {
 		this.fecha = fecha;
 		this.proveedor = proveedor;
 		this.pesoKg = pesoKg;
 		this.precioKg = precioKg;
+		this.categoria = categoria;
 		this.creadoPor = creadoPor;
 		this.creadoEn = creadoEn;
 	}
@@ -79,6 +91,14 @@ public class MediaResEntity {
 
 	public void setPrecioKg(BigDecimal precioKg) {
 		this.precioKg = precioKg;
+	}
+
+	public Categoria getCategoria() {
+		return categoria;
+	}
+
+	public void setCategoria(Categoria categoria) {
+		this.categoria = categoria;
 	}
 
 	public UUID getCreadoPor() {

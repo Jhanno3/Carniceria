@@ -1,7 +1,7 @@
 # Plan de implementación: Fase 1 — Despostado
 
-**Spec de origen:** `spec.md`, sección 2
-**Constitución:** `constitution.md` v1.0.0
+**Spec de origen:** `../spec.md`, sección 2
+**Constitución:** `../../constitution.md` v1.0.0
 **Fecha:** 2026-10-02
 **Estado:** Listo para implementar — `tasks.md` generado
 
@@ -20,7 +20,7 @@ Esta fase construye: alta de cortes (con PLU), alta y edición de medias reses, 
 | Build frontend | Vite, npm (ver `research.md`) |
 | Estilos | Tailwind CSS |
 | Estado del servidor (frontend) | TanStack Query |
-| Base de datos | Supabase Postgres, región Canada Central (ver `constitution.md` — desvío del São Paulo original, decisión del dueño) |
+| Base de datos | Supabase Postgres, región Canada Central (ver `../../constitution.md` — desvío del São Paulo original, decisión del dueño) |
 | Acceso a datos | Spring Data JPA + Hibernate, con propagación de JWT a RLS (ver `research.md`) |
 | Migraciones | Flyway |
 | Testing backend | JUnit 5 + Mockito |
@@ -35,7 +35,7 @@ Esta fase construye: alta de cortes (con PLU), alta y edición de medias reses, 
 |---|---|
 | I. Integridad de los datos | `numeric`/`BigDecimal` en toda columna de kg o $ (sección 2 de `data-model.md`); nada de `vendible_kg`/`costo_*` se persiste, se derivan (sección "Valores calculados"). El guardado atómico (`POST /medias-reses`) evita cualquier estado intermedio inconsistente en la base. No hay ventas en esta fase, así que la regla de anulación/idempotencia de escaneos no aplica todavía. |
 | II. Seguridad | RLS activado en las 5 tablas desde la primera migración, incluida `perfiles` (necesaria solo para que RLS sepa el rol); solo `dueno` puede tocar `medias_reses`/`despostado`/`perdidas`; el JWT se propaga a Postgres en vez de usar `service_role` (`research.md`). |
-| III. Cálculos confiables | Las fórmulas de la sección 6 de la especificación se implementan dos veces como funciones/clases puras (TypeScript en el frontend, Java sin anotaciones de framework en la capa `modelo/` del backend), cada una con tests que reproducen el ejemplo de 100 kg / $5.200 → $6.420 (`quickstart.md`, paso 5). |
+| III. Cálculos confiables | Las fórmulas de la sección 6 de la especificación se implementan dos veces como funciones/clases puras (TypeScript en el frontend, Java sin anotaciones de framework en la capa `modelo/` del backend), cada una con tests que reproducen el ejemplo de 100 kg / $5.200 → $6.420 (`../quickstart.md`, paso 5). |
 | IV. El mostrador no se detiene | No aplica en esta fase (no hay escaneo); se retoma en el plan de Fase 2. |
 | V. Hecho para Argentina | Todo kg/$ mostrado pasa por el formateador es-AR; campos aceptan coma o punto (el contrato de `POST /medias-reses` recibe `numeric` como string, no `number`, para no perder precisión ni formato). |
 | VI. Usabilidad y accesibilidad | Componentes de esta fase (tarjetas, tabla, mapa) siguen los tokens de `especificacion-carniceria.md` sección 5; sin checklist adicional en este plan, se verifica al construir cada componente. |
@@ -49,12 +49,13 @@ Esta fase construye: alta de cortes (con PLU), alta y edición de medias reses, 
 ```
 specs/001-sistema-carniceria/
   spec.md
-  plan.md            ← este archivo
-  research.md
-  data-model.md
-  contracts/
-    despostado-api.md
   quickstart.md
+  fase1/
+    plan.md            ← este archivo
+    research.md
+    data-model.md
+    contracts/
+      despostado-api.md
 
 backend/
   pom.xml
@@ -113,7 +114,7 @@ Resuelta en `research.md`: arquitectura en capas del backend y del frontend, bui
 
 - **Datos:** `data-model.md` — 5 tablas, con sus RLS y el seed de los 21 cortes de la sección 2.2 de la especificación.
 - **API:** `contracts/despostado-api.md` — CRUD de cortes, el endpoint de solo lectura `GET /medias-reses/estimacion` (promedio histórico para la carga automática) y `POST /medias-reses` como guardado atómico único (media res + cortes + pérdidas juntos).
-- **Verificación:** `quickstart.md` — 11 pasos manuales que cubren las 4 historias de usuario de esta fase y el ejemplo numérico obligatorio.
+- **Verificación:** `../quickstart.md` — 11 pasos manuales que cubren las 4 historias de usuario de esta fase y el ejemplo numérico obligatorio.
 
 ## 7. Fase 2 — Enfoque para generar tareas (no se ejecuta en este documento)
 
@@ -124,14 +125,14 @@ Cuando se pida `tasks.md`, se derivará de este plan en orden TDD:
 4. Tests de integración de cada endpoint de `contracts/despostado-api.md` (incluido el rechazo por RLS a un usuario `empleado`) → entity/repository/service/controller de cada feature.
 5. Capa `modelo/` del frontend (mismos casos numéricos que el paso 3) → implementación.
 6. Hooks de datos (`api/`) y componentes de UI (tarjetas, barra, mapa, tabla, selector de modo) con sus tests → ensamblado en `DespostadoPage`.
-7. Ejecución manual de `quickstart.md` como cierre de la fase.
+7. Ejecución manual de `../quickstart.md` como cierre de la fase.
 
 ## 8. Seguimiento de progreso
 
-- [x] Spec revisada (`spec.md`, sección 2)
+- [x] Spec revisada (`../spec.md`, sección 2)
 - [x] Chequeo contra la constitución (sección 3 de este documento)
 - [x] `research.md`
 - [x] `data-model.md`
 - [x] `contracts/despostado-api.md`
-- [x] `quickstart.md`
+- [x] `../quickstart.md`
 - [x] `tasks.md`

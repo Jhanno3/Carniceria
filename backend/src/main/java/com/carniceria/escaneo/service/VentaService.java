@@ -74,6 +74,24 @@ public class VentaService {
 		return new ResultadoEscaneo(construirRespuesta(venta, corte.getNombre()), false);
 	}
 
+	/**
+	 * FR-307/FR-308: nunca un DELETE, siempre un UPDATE de anulada = true. El dueño puede
+	 * anular cualquier venta de su negocio sin límite (política "ventas_dueno_todo",
+	 * V13); el empleado solo la propia y dentro de los 5 minutos (política
+	 * "ventas_empleado_anular", V18). Si RLS bloquea el UPDATE, {@code anular(id)} devuelve
+	 * 0 filas afectadas — eso es lo que distingue "no se puede" de un éxito silencioso.
+	 */
+	@Transactional
+	public VentaResponse anular(UUID id) {
+		VentaEntity venta = ventaRepository.findById(id).orElseThrow(() -> new VentaNoEncontradaException(id));
+		int filasAfectadas = ventaRepository.anular(id);
+		if (filasAfectadas == 0) {
+			throw new VentaNoSePuedeAnularException();
+		}
+		venta = ventaRepository.findById(id).orElseThrow(() -> new VentaNoEncontradaException(id));
+		return construirRespuesta(venta);
+	}
+
 	@Transactional
 	public List<VentaResponse> listar(LocalDate desde, LocalDate hasta, Integer limite) {
 		Instant desdeInstant = desde.atStartOfDay(ZONA_ARGENTINA).toInstant();

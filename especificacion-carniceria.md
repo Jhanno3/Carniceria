@@ -117,7 +117,7 @@ Es la pantalla del mostrador. Tiene que poder usarse rápido y sin mouse.
 
 **Stock por corte:** columnas Corte, Entró, Vendido, Queda y una barra de disponible. Si queda menos de un umbral (por defecto 15 % de lo que entró), la fila se marca en naranja con la etiqueta "Queda poco".
 
-**Acciones:** "Exportar a Excel" y "Cerrar el día".
+**Acciones:** "Cerrar el día". *(No se exporta a Excel — decisión del dueño, 2026-10-04.)*
 
 ---
 
@@ -220,6 +220,7 @@ medias_reses
   proveedor text
   peso_kg numeric(8,3) not null
   precio_kg numeric(12,2)   -- solo visible para el dueño
+  categoria text check (categoria in ('Novillo','Novillito','Vaquillona','Vaca','Toro','Ternero'))  -- opcional, clasificación Mercado de Liniers, para reporte de Fase 4
   estado text check (estado in ('abierta','cerrada')) default 'abierta'
   creado_por uuid references auth.users
 
@@ -273,7 +274,7 @@ Si se corta internet en el mostrador, los escaneos se guardan en el navegador (I
 1. **Despostado**: cortes, medias reses, carga de despostado y pérdidas, cálculos y mapa.
 2. **Escaneo y stock**: lectura de etiquetas, ventas, stock por corte, resumen del día.
 3. **Sin conexión y roles**: cola offline, permisos de empleado, anulación de ventas.
-4. **Reportes**: rendimiento por proveedor, por categoría de animal y por período; exportación a Excel.
+4. **Reportes**: rendimiento por proveedor, por categoría de animal y por período. *(Sin exportación a Excel — decisión del dueño, 2026-10-04.)*
 
 ---
 

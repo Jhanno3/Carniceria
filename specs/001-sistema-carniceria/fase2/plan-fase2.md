@@ -1,12 +1,12 @@
 # Plan de implementación: Fase 2 — Escaneo y stock
 
-**Spec de origen:** `spec.md`, sección 3
-**Constitución:** `constitution.md` v1.0.0
+**Spec de origen:** `../spec.md`, sección 3
+**Constitución:** `../../constitution.md` v1.0.0
 **Fecha:** 2026-10-03
 **Estado:** Listo para implementar — `tasks-fase2.md` generado
 
 **Nota:** este plan se escribió antes del pivot a multi-negocio (`V9__rol_admin.sql`,
-`V10__multi_negocio.sql` — ver `data-model.md`). Ya está actualizado para reflejarlo:
+`V10__multi_negocio.sql` — ver `../fase1/data-model.md`). Ya está actualizado para reflejarlo:
 `ventas` y `config_etiqueta` son por negocio, y las migraciones de esta fase arrancan en
 `V11` (la `V10` real la usó el pivot).
 
@@ -15,19 +15,19 @@
 Esta fase construye: el decodificador de etiquetas EAN-13 (configurable, FR-202),
 el registro de ventas por escaneo con feedback en menos de 1 segundo (FR-201/FR-203/FR-204),
 el stock por corte calculado por vista (FR-205), el resumen del día y "ventas de hoy"
-(FR-206/FR-207), el umbral de "Queda poco" (FR-208), la pantalla de configuración de
-etiqueta (FR-209) y la exportación a Excel (FR-210). No incluye cola offline ni anulación
-de ventas (Fase 3) ni roles finos más allá de los que ya distinguía RLS desde la Fase 1.
+(FR-206/FR-207), el umbral de "Queda poco" (FR-208) y la pantalla de configuración de
+etiqueta (FR-209). No incluye cola offline ni anulación de ventas (Fase 3) ni roles finos
+más allá de los que ya distinguía RLS desde la Fase 1. Tampoco incluye exportar a Excel
+(FR-210): descartado por decisión del dueño (2026-10-04), no solo pospuesto — ver 3.5.
 
-## 2. Contexto técnico (delta sobre `plan.md`)
+## 2. Contexto técnico (delta sobre `../fase1/plan.md`)
 
 | Punto | Valor |
 |---|---|
 | Alcance de datos nuevo | `ventas`, `config_etiqueta` (`data-model-fase2.md`); `despostado` gana una política de `select` para `empleado` que ya estaba anticipada en `V2__cortes.sql`. |
-| Generación de Excel | Apache POI (`poi-ooxml`), nueva dependencia Maven. |
 | Nada nuevo en el frontend a nivel de librerías | El escaneo por lector USB es un `<input>` de texto normal + `onKeyDown`/`onChange` (el lector "escribe" y manda Enter, no hay API de hardware involucrada). |
 
-## 3. Decisiones de esta fase (equivalente a `research.md` de la Fase 1)
+## 3. Decisiones de esta fase (equivalente a `../fase1/research.md` de la Fase 1)
 
 ### 3.1 Dónde vive el decodificador de EAN-13
 
@@ -88,26 +88,25 @@ en un POS web.
 
 Postgres ejecuta una vista por defecto con los permisos de su dueño, no de quien la
 consulta — eso saltearía RLS por completo (mismo tipo de hallazgo de seguridad que ya
-apareció en Fase 1 con los `UPDATE` sin `@Version`, ver `research.md`). La vista
+apareció en Fase 1 con los `UPDATE` sin `@Version`, ver `../fase1/research.md`). La vista
 `stock_por_corte` se crea explícitamente con `security_invoker = true` (`data-model-fase2.md`)
 para que las políticas de `despostado` y `ventas` se apliquen con el rol **y el negocio**
 de quien pregunta, no con el del dueño de la vista — sin esto, no solo se saltearía RLS
 por rol, sino que cualquier negocio vería el stock de cualquier otro.
 
-### 3.5 Exportar a Excel
+### 3.5 Exportar a Excel — descartado (decisión del dueño, 2026-10-04)
 
-Apache POI, en una clase de servicio nueva (`controldiario/service/ExportService.java`),
-sin capa `modelo/` propia: arma el `.xlsx` a partir de los mismos DTOs que ya devuelven
-`GET /ventas` y `GET /stock`, no recalcula nada. Un test de integración alcanza (contenido
-binario simple de verificar: cantidad de filas por hoja).
+FR-210 no se construye: no hace falta exportar ventas/stock a Excel. No se agrega Apache
+POI ni ningún `ExportService`/`ExportController`; `GET /control-diario/exportar` se sacó
+de `contracts/control-diario-api.md`. Es una decisión de producto, no una postergación por
+complejidad — si en el futuro hiciera falta, se vuelve a abrir como una fase nueva.
 
 ### 3.6 Fuera de alcance de esta fase (Principio VII)
 
 - **Escaneo por cámara** ("Usar cámara del celular", sección 4.2 de la especificación):
-  no tiene requisito funcional propio más allá del botón alternativo. Se deja marcada como
-  tarea opcional en `tasks-fase2.md`, fuera del camino crítico — agregarla implica sumar
-  una librería de lectura de barcode por cámara que hoy no tiene ningún FR que la exija
-  con detalle (ej. qué pasa si la cámara no decodifica, qué formatos soporta).
+  **descartado** (decisión del dueño, 2026-10-04, no solo pospuesto) — el mostrador siempre
+  escanea con un lector de código de barras USB físico. No se agrega ninguna librería de
+  lectura de barcode por cámara; `tasks-fase2.md` Bloque 9 queda sin hacer.
 - **Anulación de ventas:** Fase 3 (FR-307/308). `ventas.anulada` existe en el DDL desde ya
   (para no migrar el tipo de dato después) pero ningún endpoint de esta fase la escribe.
 - **Cola offline (IndexedDB):** Fase 3 (FR-301-303). `id_cliente_local` ya se genera en el
@@ -128,13 +127,13 @@ binario simple de verificar: cantidad de filas por hoja).
 | VII. Simplicidad | Decodificador en un solo lugar (3.1); cámara y anulación quedan explícitamente afuera (3.6); la vista de stock resuelve el cálculo en la base, no se duplica en Java. |
 | VIII. Cambios controlados | `ventas`/`config_etiqueta`/vista/política nueva de `despostado`, todo en migraciones Flyway versionadas (`V12`-`V15` en `tasks-fase2.md`). |
 
-## 5. Estructura del proyecto (nuevo sobre `plan.md`)
+## 5. Estructura del proyecto (nuevo sobre `../fase1/plan.md`)
 
 ```
 backend/src/main/java/com/carniceria/
   escaneo/
     controller/VentaController.java, ConfigEtiquetaController.java
-    service/VentaService.java, ConfigEtiquetaService.java, ExportService.java
+    service/VentaService.java, ConfigEtiquetaService.java
     modelo/Ean13.java, DecodificadorEtiqueta.java   (dominio puro, con tests)
     entity/VentaEntity.java, ConfigEtiquetaEntity.java
     dto/EscanearRequest.java, VentaResponse.java, StockCorteResponse.java,
@@ -164,13 +163,13 @@ frontend/src/features/ajustes/
 - **Datos:** `data-model-fase2.md` — `ventas`, `config_etiqueta`, vista `stock_por_corte`,
   más la política de `empleado` que le faltaba a `despostado`.
 - **API:** `contracts/control-diario-api.md` — `POST /ventas`, `GET /ventas`, `GET /stock`,
-  `GET /control-diario/resumen`, `GET`/`PUT /config-etiqueta`, `GET /control-diario/exportar`.
-- **Verificación:** se agrega a `quickstart.md` en `tasks-fase2.md` (último bloque), no se
+  `GET /control-diario/resumen`, `GET`/`PUT /config-etiqueta`.
+- **Verificación:** se agrega a `../quickstart.md` en `tasks-fase2.md` (último bloque), no se
   duplica un archivo nuevo — mismos pasos manuales, continuando la numeración de la Fase 1.
 
 ## 7. Enfoque para generar tareas (no se ejecuta en este documento)
 
-Mismo orden TDD que la Fase 1 (`plan.md`, sección 7), adaptado:
+Mismo orden TDD que la Fase 1 (`../fase1/plan.md`, sección 7), adaptado:
 1. Migraciones (`V12`-`V15`, en orden).
 2. Capa `modelo/` del backend (`Ean13`, `DecodificadorEtiqueta`) — tests primero, sin Spring.
 3. Feature `escaneo`: tests de integración de `POST /ventas` (incluye los 4 códigos de
@@ -180,14 +179,13 @@ Mismo orden TDD que la Fase 1 (`plan.md`, sección 7), adaptado:
    implementación (usa la vista de 3.4).
 5. `config_etiqueta`: tests de `GET`/`PUT` (incluido el `400` de rangos superpuestos) →
    implementación.
-6. Exportar a Excel: test de integración mínimo → `ExportService`.
-7. Frontend: `ControlDiarioPage` (campo de escaneo con foco persistente, resumen,
+6. Frontend: `ControlDiarioPage` (campo de escaneo con foco persistente, resumen,
    ventas de hoy, stock) y `AjustesPage` (`config_etiqueta`), con sus tests de componente.
-8. Cierre: pasos manuales agregados a `quickstart.md`.
+7. Cierre: pasos manuales agregados a `../quickstart.md`.
 
 ## 8. Seguimiento de progreso
 
-- [x] Spec revisada (`spec.md`, sección 3)
+- [x] Spec revisada (`../spec.md`, sección 3)
 - [x] Chequeo contra la constitución (sección 4 de este documento)
 - [x] Decisiones de diseño (sección 3 de este documento)
 - [x] `data-model-fase2.md`

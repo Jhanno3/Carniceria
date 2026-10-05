@@ -9,6 +9,8 @@ public record CargarEntradaRequest(
 		String proveedor,
 		@NotBlank String pesoKg,
 		String precioKg,
+		/** Novillo/Novillito/Vaquillona/Vaca/Toro/Ternero — opcional, para el reporte de Fase 4. */
+		String categoria,
 		@Valid List<CorteKgDto> cortes,
 		PerdidasDto perdidas) {
 

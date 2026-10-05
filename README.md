@@ -5,7 +5,9 @@ Aplicación web interna para una carnicería argentina: registra el despostado d
 Documentos de referencia:
 - [`especificacion-carniceria.md`](especificacion-carniceria.md) — producto, diseño y modelo de datos.
 - [`constitution.md`](constitution.md) — principios que rigen el desarrollo y el stack decidido.
-- [`specs/001-sistema-carniceria/`](specs/001-sistema-carniceria/) — spec, plan, modelo de datos, contrato de API y tareas de la implementación en curso (Fase 1: Despostado).
+- [`specs/001-sistema-carniceria/spec.md`](specs/001-sistema-carniceria/spec.md) — spec funcional de las 4 fases (historias de usuario, requisitos funcionales, casos borde).
+- [`specs/001-sistema-carniceria/quickstart.md`](specs/001-sistema-carniceria/quickstart.md) — guión de verificación manual, continuo a través de las fases.
+- `specs/001-sistema-carniceria/fase{1,2,3}/` — plan, modelo de datos, contrato de API y tareas de cada fase ya planificada o implementada.
 
 ## Stack tecnológico
 
@@ -19,7 +21,7 @@ Documentos de referencia:
 | Testing frontend | Vitest + React Testing Library |
 | Hosting | Frontend en Vercel/Netlify, backend en Railway |
 
-Arquitectura: el frontend nunca accede a Supabase directamente (salvo el login contra Supabase Auth con la clave anónima). Todo lo demás pasa por la API propia en Spring Boot, que valida el JWT y lo propaga a Postgres para que las políticas de RLS se apliquen por usuario real. Cada feature del backend se organiza en capas (`controller` → `service` → `modelo` → `repository` → `entity`, con `dto` para los contratos de la API) — ver `research.md` dentro de `specs/001-sistema-carniceria/` para el detalle.
+Arquitectura: el frontend nunca accede a Supabase directamente (salvo el login contra Supabase Auth con la clave anónima). Todo lo demás pasa por la API propia en Spring Boot, que valida el JWT y lo propaga a Postgres para que las políticas de RLS se apliquen por usuario real. Cada feature del backend se organiza en capas (`controller` → `service` → `modelo` → `repository` → `entity`, con `dto` para los contratos de la API) — ver [`specs/001-sistema-carniceria/fase1/research.md`](specs/001-sistema-carniceria/fase1/research.md) para el detalle.
 
 ## Requisitos previos
 
@@ -69,4 +71,6 @@ cd frontend && npm run test
 
 ## Estado actual
 
-Fase 1 (Despostado) en desarrollo — ver [`specs/001-sistema-carniceria/tasks.md`](specs/001-sistema-carniceria/tasks.md) para el detalle de tareas y su progreso.
+- **Fase 1 (Despostado)** y **Fase 2 (Escaneo y stock)** implementadas — ver [`fase1/tasks.md`](specs/001-sistema-carniceria/fase1/tasks.md) y [`fase2/tasks-fase2.md`](specs/001-sistema-carniceria/fase2/tasks-fase2.md) para el detalle y su progreso. Pendiente de esta última: la verificación manual de `quickstart.md` (T115).
+- **Fase 3 (Sin conexión y anulación)** planificada, implementación no empezada — ver [`fase3/tasks-fase3.md`](specs/001-sistema-carniceria/fase3/tasks-fase3.md).
+- **Fase 4 (Reportes)** sin planificar todavía.

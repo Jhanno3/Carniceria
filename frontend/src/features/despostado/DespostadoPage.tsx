@@ -11,6 +11,10 @@ import { TarjetasResumen } from './components/TarjetasResumen'
 import { calcularResumen } from './modelo/resumen'
 import { parsearNumero } from '../../shared/formato/formatoEsAr'
 import { Modal } from '../../shared/ui/Modal'
+import type { CategoriaAnimal } from './api/types'
+
+// Clasificación típica de Mercado de Liniers (V17__categoria_animal.sql).
+const CATEGORIAS_ANIMAL: CategoriaAnimal[] = ['Novillo', 'Novillito', 'Vaquillona', 'Vaca', 'Toro', 'Ternero']
 
 // especificacion-carniceria.md, sección 2.2 — PLU provisorio asignado en V3__seed_cortes.sql.
 // Aguja/Marucha/Pecho/Cogote (16/18/19/20) se sacaron del catálogo en V8 — ver
@@ -42,6 +46,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   const [proveedor, setProveedor] = useState('')
   const [pesoKgTexto, setPesoKgTexto] = useState('')
   const [precioKgTexto, setPrecioKgTexto] = useState('')
+  const [categoria, setCategoria] = useState<CategoriaAnimal | ''>('')
   const [modo, setModo] = useState<'manual' | 'automatico' | null>(null)
   const [kgPorCorte, setKgPorCorte] = useState<Record<string, string>>({})
   const [perdidas, setPerdidas] = useState({ hueso: '', grasa: '', merma: '' })
@@ -116,6 +121,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
     setPerdidas({ hueso: '11', grasa: '6', merma: '2' })
     setPesoKgTexto('100')
     setPrecioKgTexto('5200')
+    setCategoria('Novillo')
     setModo('manual')
   }
 
@@ -124,6 +130,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
       proveedor: proveedor.trim() === '' ? null : proveedor,
       pesoKg: aTextoPlano(pesoKgTexto),
       precioKg: precioKgTexto.trim() === '' ? null : aTextoPlano(precioKgTexto),
+      categoria: categoria === '' ? null : categoria,
       cortes: Object.entries(kgPorCorte)
         .filter(([, texto]) => texto.trim() !== '')
         .map(([corteId, texto]) => ({ corteId, kg: aTextoPlano(texto) })),
@@ -150,6 +157,25 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
           onChange={(e) => setProveedor(e.target.value)}
           className="h-11 w-full max-w-sm rounded-xl border border-borde-campo px-3 text-cuerpo"
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="categoria" className="text-etiqueta font-medium uppercase text-texto-secundario">
+          Categoría del animal (opcional)
+        </label>
+        <select
+          id="categoria"
+          value={categoria}
+          onChange={(e) => setCategoria(e.target.value as CategoriaAnimal | '')}
+          className="h-11 w-full max-w-sm rounded-xl border border-borde-campo px-3 text-cuerpo"
+        >
+          <option value="">Sin especificar</option>
+          {CATEGORIAS_ANIMAL.map((opcion) => (
+            <option key={opcion} value={opcion}>
+              {opcion}
+            </option>
+          ))}
+        </select>
       </div>
 
       <TarjetasResumen

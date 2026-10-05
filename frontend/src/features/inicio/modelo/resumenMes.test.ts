@@ -9,6 +9,7 @@ function entrada(pesoKg: string, vendibleKg: string, costoTotal: string | null):
     proveedor: null,
     pesoKg,
     precioKg: costoTotal == null ? null : '5200',
+    categoria: null,
     despostado: [],
     perdidas: { hueso: null, grasa: null, merma: null },
     resumen: {

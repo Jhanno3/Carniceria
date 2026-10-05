@@ -31,12 +31,17 @@ export interface ResumenDto {
   costoKgVendible: string | null
 }
 
+// Clasificación típica de Mercado de Liniers (V17__categoria_animal.sql) — opcional,
+// para el reporte "por categoría de animal" de Fase 4.
+export type CategoriaAnimal = 'Novillo' | 'Novillito' | 'Vaquillona' | 'Vaca' | 'Toro' | 'Ternero'
+
 export interface MediaResResponse {
   id: string
   fecha: string
   proveedor: string | null
   pesoKg: string
   precioKg: string | null
+  categoria: CategoriaAnimal | null
   despostado: CorteKgDto[]
   perdidas: PerdidasDto
   resumen: ResumenDto
@@ -46,6 +51,7 @@ export interface CargarEntradaRequest {
   proveedor?: string | null
   pesoKg: string
   precioKg?: string | null
+  categoria?: CategoriaAnimal | null
   cortes: CorteKgDto[]
   perdidas?: PerdidasDto | null
 }
