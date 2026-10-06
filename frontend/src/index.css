@@ -33,6 +33,8 @@
 
   --text-titulo-seccion: 18px;
   --text-cifra-tarjeta: 34px;
+  /* Misma cifra de tarjeta, para cuando el número no entra en una línea a 34px (ej. "Ganancia estimada" con 7+ cifras). */
+  --text-cifra-tarjeta-chica: 22px;
   --text-cuerpo: 15px;
   --text-etiqueta: 13px;
 }

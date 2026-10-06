@@ -56,10 +56,11 @@ public class MediaResService {
 		BigDecimal pesoKg = parsearPeso(request.pesoKg());
 		BigDecimal precioKg = BigDecimals.parse(request.precioKg());
 		MediaResEntity.Categoria categoria = parsearCategoria(request.categoria());
+		MediaResEntity.TipoEntrada tipoEntrada = parsearTipoEntrada(request.tipoEntrada());
 		validarCortes(request.cortesOVacio());
 
 		MediaResEntity mediaRes = new MediaResEntity(
-				LocalDate.now(ZONA_ARGENTINA), request.proveedor(), pesoKg, precioKg, categoria,
+				LocalDate.now(ZONA_ARGENTINA), request.proveedor(), pesoKg, precioKg, categoria, tipoEntrada,
 				usuarioId, Instant.now());
 		mediaRes = mediaResRepository.save(mediaRes);
 
@@ -75,15 +76,24 @@ public class MediaResService {
 		BigDecimal pesoKg = parsearPeso(request.pesoKg());
 		BigDecimal precioKg = BigDecimals.parse(request.precioKg());
 		MediaResEntity.Categoria categoria = parsearCategoria(request.categoria());
+		MediaResEntity.TipoEntrada tipoEntrada = parsearTipoEntrada(request.tipoEntrada());
 		validarCortes(request.cortesOVacio());
 
 		mediaRes.setProveedor(request.proveedor());
 		mediaRes.setPesoKg(pesoKg);
 		mediaRes.setPrecioKg(precioKg);
 		mediaRes.setCategoria(categoria);
+		mediaRes.setTipoEntrada(tipoEntrada);
 
 		despostadoRepository.deleteByMediaResId(id);
 		perdidaRepository.deleteByMediaResId(id);
+		// Flush explícito: sin esto, Hibernate puede flushear los INSERT de abajo antes que
+		// estos DELETE (el orden de acciones por defecto no respeta el orden del código) —
+		// si la edición manda el mismo corte que ya tenía, el INSERT choca con la unique
+		// constraint (media_res_id, corte_id) de una fila que, en la base, todavía no se
+		// borró.
+		despostadoRepository.flush();
+		perdidaRepository.flush();
 		guardarDespostadoYPerdidas(id, request.cortesOVacio(), request.perdidas());
 
 		return construirRespuesta(mediaRes);
@@ -127,6 +137,18 @@ public class MediaResService {
 			return MediaResEntity.Categoria.valueOf(categoria);
 		} catch (IllegalArgumentException e) {
 			throw new CategoriaInvalidaException(categoria);
+		}
+	}
+
+	/** Fase 6, FR-601: ausente/blank se asume "MediaRes" (sin restricción), nunca null. */
+	private MediaResEntity.TipoEntrada parsearTipoEntrada(String tipoEntrada) {
+		if (tipoEntrada == null || tipoEntrada.isBlank()) {
+			return MediaResEntity.TipoEntrada.MediaRes;
+		}
+		try {
+			return MediaResEntity.TipoEntrada.valueOf(tipoEntrada);
+		} catch (IllegalArgumentException e) {
+			throw new TipoEntradaInvalidoException(tipoEntrada);
 		}
 	}
 
@@ -199,6 +221,7 @@ public class MediaResService {
 				mediaRes.getId(), mediaRes.getFecha(), mediaRes.getProveedor(),
 				BigDecimals.aTexto(mediaRes.getPesoKg()), BigDecimals.aTexto(mediaRes.getPrecioKg()),
 				mediaRes.getCategoria() == null ? null : mediaRes.getCategoria().name(),
+				mediaRes.getTipoEntrada().name(),
 				despostadoDto, PerdidasDto.de(perdidas), ResumenDto.de(resumen));
 	}
 

@@ -94,7 +94,7 @@ class EstimacionControllerTest {
 		// bloquea el insert (ver RlsPropagationIT, Bloque 2, para el mismo patrón).
 		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
 		CargarEntradaRequest entradaHistorica = new CargarEntradaRequest(
-				null, "100.000", null, null,
+				null, "100.000", null, null, null,
 				List.of(new CorteKgDto(corteAsadoId, "11.000")), // 11 % en la entrada histórica
 				null);
 		mediaResService.cargarEntrada(entradaHistorica, DUENO_TEST_ID);
@@ -124,7 +124,7 @@ class EstimacionControllerTest {
 		UUID corteAsadoDeOtroUsuario = corteRepository.findByPlu(11).orElseThrow().getId();
 
 		CargarEntradaRequest entradaDeOtroUsuario = new CargarEntradaRequest(
-				null, "100.000", null, null,
+				null, "100.000", null, null, null,
 				List.of(new CorteKgDto(corteAsadoDeOtroUsuario, "11.000")),
 				null);
 		mediaResService.cargarEntrada(entradaDeOtroUsuario, OTRO_USUARIO_ID);

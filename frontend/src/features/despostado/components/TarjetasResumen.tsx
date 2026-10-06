@@ -15,6 +15,8 @@ interface TarjetasResumenProps {
   precioKgTexto: string
   onCambiarPrecioKg: (texto: string) => void
   resumen: Resumen
+  /** Suma de (precioVenta - costoKgVendible) × kg, por cada corte con ambos cargados. */
+  gananciaEstimada: number | null
 }
 
 function Tarjeta({ titulo, children }: { titulo: string; children: React.ReactNode }) {
@@ -32,11 +34,12 @@ export function TarjetasResumen({
   precioKgTexto,
   onCambiarPrecioKg,
   resumen,
+  gananciaEstimada,
 }: TarjetasResumenProps) {
   const tienePrecio = resumen.costoKgVendible != null
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <Tarjeta titulo="Entrada">
         <label htmlFor="peso-media-res" className="text-etiqueta text-texto-secundario">
           Peso media res (kg)
@@ -90,6 +93,31 @@ export function TarjetasResumen({
           <>
             <p className="text-cifra-tarjeta font-titulos font-bold text-texto-secundario">—</p>
             <p className="text-cuerpo text-texto-secundario">Cargá el precio de compra</p>
+          </>
+        )}
+      </Tarjeta>
+
+      <Tarjeta titulo="Ganancia estimada">
+        {gananciaEstimada != null ? (() => {
+          const texto = formatearPesos(gananciaEstimada)
+          // Pasadas las 6 cifras, 34px ya no entra en una línea dentro de la tarjeta.
+          const esNumeroLargo = texto.replace(/\D/g, '').length > 6
+          return (
+            <p
+              className={`numero whitespace-nowrap font-titulos font-bold ${esNumeroLargo ? 'text-cifra-tarjeta-chica' : 'text-cifra-tarjeta'} ${gananciaEstimada >= 0 ? 'text-exito-texto' : 'text-error'}`}
+            >
+              {texto}
+            </p>
+          )
+        })() : !tienePrecio ? (
+          <>
+            <p className="text-cifra-tarjeta font-titulos font-bold text-texto-secundario">—</p>
+            <p className="text-cuerpo text-texto-secundario">Cargá el precio de compra</p>
+          </>
+        ) : (
+          <>
+            <p className="text-cifra-tarjeta font-titulos font-bold text-texto-secundario">—</p>
+            <p className="text-cuerpo text-texto-secundario">Cargá precio de venta en "Editar cortes"</p>
           </>
         )}
       </Tarjeta>

@@ -140,6 +140,41 @@ pasos manuales.
 
 ---
 
+# Quickstart — Fase 6: Tipo de entrada ("Corte") en Despostado
+
+Continúa la numeración de Fase 5. Reproduce `fase6/tasks-fase6.md` (FR-601/FR-602).
+
+## Verificación
+
+47. Como `dueno`, ir a **Despostado** y mirar el selector "Corte", a la derecha de
+    "Categoría del animal".
+    - **Esperado:** arranca en "Media res"; con ese valor, ningún corte de la tabla
+      "Cortes vendibles" aparece atenuado (igual que antes de esta fase).
+48. Cambiar el selector a "Pecho".
+    - **Esperado:** en la tabla "Cortes vendibles", solo Paleta/Roast beef/Cogote/Falda
+      quedan con su campo de kg habilitado; el resto de las filas se atenúa (gris) y su
+      campo de kg no deja tipear. Las filas atenuadas se pueden igual tocar/seleccionar
+      (se ve su zona en el mapa), solo no se puede cargar kg.
+49. Con "Pecho" todavía elegido, cargar algo de kg en Paleta y guardar la entrada; recargar
+    la página y volver a abrir esa misma entrada (o cargar una nueva y mirar el selector).
+    - **Esperado:** "Pecho" sigue seleccionado — el tipo de entrada persiste.
+50. Volver a "Media res".
+    - **Esperado:** ya no queda ninguna fila atenuada.
+51. Click "Restablecer ejemplo" (estando en cualquier otro tipo que no sea "Media res").
+    - **Esperado:** el selector vuelve solo a "Media res" (el ejemplo de 100 kg reparte
+      kilos en cortes de varios tipos a la vez, no tendría sentido mostrado atenuado).
+
+## Correspondencia con tests automatizados
+
+Los pasos 47-51 ya están cubiertos por tests automatizados: `MediaResControllerTest`
+(persistencia de `tipoEntrada`, default `"MediaRes"`, `400 TIPO_ENTRADA_INVALIDO`),
+`tiposDeEntrada.test.ts` (el mapeo puro de cada tipo a sus cortes), `TablaCortes.test.tsx`
+(atenuado/deshabilitado de las filas fuera del tipo elegido, y que igual se pueden
+seleccionar). Lo que el test automatizado no cubre es la experiencia visual real de ver la
+tabla atenuarse en el navegador — por eso sigue siendo un paso manual.
+
+---
+
 # Quickstart — Fase 4: Reportes, listado completo de cuentas y pausar acceso
 
 Continúa la numeración de Fase 3. Reproduce US-4.1/4.3/4.4 de `spec.md` sección 5 y

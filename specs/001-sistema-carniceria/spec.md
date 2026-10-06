@@ -254,3 +254,10 @@ requisitos (FR-501 a FR-505) están documentados en `fase5/tasks-fase5.md`, no a
 tener que renumerar las secciones 6-10 de este documento. Si en algún momento se quiere esa
 paridad, agregar una sección nueva (no insertarla entre las existentes) — ver la nota al
 final de `fase5/tasks-fase5.md`.
+
+## 12. Fase 6 (nota, no FR formales)
+
+La Fase 6 (tipo de entrada "Corte" en Despostado: Media res/Delantero/Pecho/Parrillero/
+Asado completo/Mocho/Rueda, atenúa los cortes que no aplican) también se pidió directo por
+chat — sus requisitos (FR-601/FR-602) y el mapeo completo de cortes por tipo están en
+`fase6/tasks-fase6.md`, mismo criterio que la sección 11.

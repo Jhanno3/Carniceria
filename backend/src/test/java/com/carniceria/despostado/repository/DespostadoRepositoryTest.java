@@ -73,10 +73,10 @@ class DespostadoRepositoryTest {
 
 		MediaResEntity mediaRes1 = mediaResRepository.save(new MediaResEntity(
 				LocalDate.now(), "Proveedor A", new BigDecimal("100.000"), new BigDecimal("5000.00"), null,
-				DUENO_TEST_ID, Instant.now()));
+				MediaResEntity.TipoEntrada.MediaRes, DUENO_TEST_ID, Instant.now()));
 		MediaResEntity mediaRes2 = mediaResRepository.save(new MediaResEntity(
 				LocalDate.now(), "Proveedor B", new BigDecimal("50.000"), new BigDecimal("4000.00"), null,
-				DUENO_TEST_ID, Instant.now()));
+				MediaResEntity.TipoEntrada.MediaRes, DUENO_TEST_ID, Instant.now()));
 		mediaResRepository.flush();
 
 		// mediaRes1 tiene 2 filas de despostado (debe sumarlas, no multiplicarlas entre sí
@@ -115,7 +115,7 @@ class DespostadoRepositoryTest {
 
 		MediaResEntity mediaRes = mediaResRepository.save(new MediaResEntity(
 				LocalDate.now(), "Proveedor A", new BigDecimal("100.000"), new BigDecimal("5000.00"), null,
-				DUENO_TEST_ID, Instant.now()));
+				MediaResEntity.TipoEntrada.MediaRes, DUENO_TEST_ID, Instant.now()));
 		mediaResRepository.flush();
 		despostadoRepository.save(new DespostadoEntity(mediaRes.getId(), corteVacioId, new BigDecimal("60.000")));
 		despostadoRepository.save(new DespostadoEntity(mediaRes.getId(), corteAsadoId, new BigDecimal("21.000")));

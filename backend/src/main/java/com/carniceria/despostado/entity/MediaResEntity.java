@@ -23,6 +23,14 @@ public class MediaResEntity {
 		Novillo, Novillito, Vaquillona, Vaca, Toro, Ternero
 	}
 
+	// Fase 6, FR-601: qué parte de la media res llegó como entrada — MediaRes es "toda
+	// entera, sin restricción" (default), el resto son cortes comerciales más chicos. El
+	// mapeo de cada uno a los cortes del catálogo que habilita vive solo en el frontend
+	// (fase6/tasks-fase6.md) — el backend no lo valida, es nada más una restricción de UI.
+	public enum TipoEntrada {
+		MediaRes, Delantero, Pecho, Parrillero, AsadoCompleto, Mocho, Rueda
+	}
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
@@ -41,6 +49,10 @@ public class MediaResEntity {
 	@Enumerated(EnumType.STRING)
 	private Categoria categoria;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "tipo_entrada", nullable = false)
+	private TipoEntrada tipoEntrada;
+
 	@Column(name = "creado_por", nullable = false)
 	private UUID creadoPor;
 
@@ -51,12 +63,13 @@ public class MediaResEntity {
 	}
 
 	public MediaResEntity(LocalDate fecha, String proveedor, BigDecimal pesoKg, BigDecimal precioKg,
-			Categoria categoria, UUID creadoPor, Instant creadoEn) {
+			Categoria categoria, TipoEntrada tipoEntrada, UUID creadoPor, Instant creadoEn) {
 		this.fecha = fecha;
 		this.proveedor = proveedor;
 		this.pesoKg = pesoKg;
 		this.precioKg = precioKg;
 		this.categoria = categoria;
+		this.tipoEntrada = tipoEntrada;
 		this.creadoPor = creadoPor;
 		this.creadoEn = creadoEn;
 	}
@@ -99,6 +112,14 @@ public class MediaResEntity {
 
 	public void setCategoria(Categoria categoria) {
 		this.categoria = categoria;
+	}
+
+	public TipoEntrada getTipoEntrada() {
+		return tipoEntrada;
+	}
+
+	public void setTipoEntrada(TipoEntrada tipoEntrada) {
+		this.tipoEntrada = tipoEntrada;
 	}
 
 	public UUID getCreadoPor() {

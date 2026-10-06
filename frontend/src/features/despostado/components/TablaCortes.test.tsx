@@ -58,4 +58,56 @@ describe('TablaCortes', () => {
     expect(screen.getByTestId('fila-corte-c1')).toHaveClass('bg-rosado')
     expect(screen.getByTestId('fila-corte-c2')).not.toHaveClass('bg-rosado')
   })
+
+  it('sin corteNombresHabilitados (o null), ningún corte se atenúa (Fase 6: "Media res")', () => {
+    render(
+      <TablaCortes
+        cortes={cortes}
+        kgPorCorte={{}}
+        onCambiarKg={() => {}}
+        corteSeleccionadoId={null}
+        onSeleccionarCorte={() => {}}
+        corteNombresHabilitados={null}
+      />,
+    )
+
+    expect(screen.getByTestId('fila-corte-c1').className).not.toMatch(/opacity/)
+    expect(screen.getByLabelText(/kilos de vacío/i)).not.toBeDisabled()
+  })
+
+  it('con corteNombresHabilitados, atenúa y deshabilita los cortes fuera del set (Fase 6)', () => {
+    render(
+      <TablaCortes
+        cortes={cortes}
+        kgPorCorte={{}}
+        onCambiarKg={() => {}}
+        corteSeleccionadoId={null}
+        onSeleccionarCorte={() => {}}
+        corteNombresHabilitados={new Set(['Asado'])}
+      />,
+    )
+
+    expect(screen.getByTestId('fila-corte-c1').className).toMatch(/opacity/) // Vacío: no habilitado
+    expect(screen.getByLabelText(/kilos de vacío/i)).toBeDisabled()
+    expect(screen.getByTestId('fila-corte-c2').className).not.toMatch(/opacity/) // Asado: habilitado
+    expect(screen.getByLabelText(/kilos de asado/i)).not.toBeDisabled()
+  })
+
+  it('un corte atenuado igual se puede seleccionar (solo se bloquea cargar kg, no la lectura)', async () => {
+    const onSeleccionarCorte = vi.fn()
+    render(
+      <TablaCortes
+        cortes={cortes}
+        kgPorCorte={{}}
+        onCambiarKg={() => {}}
+        corteSeleccionadoId={null}
+        onSeleccionarCorte={onSeleccionarCorte}
+        corteNombresHabilitados={new Set(['Asado'])}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vacío' }))
+
+    expect(onSeleccionarCorte).toHaveBeenCalledWith('c1')
+  })
 })

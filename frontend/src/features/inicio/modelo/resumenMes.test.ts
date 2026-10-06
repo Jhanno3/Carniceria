@@ -22,6 +22,7 @@ function entrada(pesoKg: string, vendibleKg: string, costoTotal: string | null):
     id: crypto.randomUUID(),
     fecha: '2026-10-01',
     proveedor: null,
+    tipoEntrada: 'MediaRes',
     pesoKg,
     precioKg: costoTotal == null ? null : '5200',
     categoria: null,

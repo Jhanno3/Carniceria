@@ -11,6 +11,8 @@ public record MediaResResponse(
 		String pesoKg,
 		String precioKg,
 		String categoria,
+		/** MediaRes/Delantero/Pecho/Parrillero/AsadoCompleto/Mocho/Rueda — siempre presente (Fase 6, FR-601). */
+		String tipoEntrada,
 		List<CorteKgDto> despostado,
 		PerdidasDto perdidas,
 		ResumenDto resumen) {

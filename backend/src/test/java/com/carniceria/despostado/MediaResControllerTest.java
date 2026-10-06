@@ -2,6 +2,7 @@ package com.carniceria.despostado;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -125,6 +126,58 @@ class MediaResControllerTest {
 						.content(objectMapper.writeValueAsString(body)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error").value("CATEGORIA_INVALIDA"));
+	}
+
+	@Test
+	void cargarEntrada_conTipoEntradaValido_loPersisteYLoDevuelve() throws Exception {
+		Map<String, Object> body = cuerpoDeEjemplo();
+		body.put("tipoEntrada", "Pecho");
+
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.tipoEntrada").value("Pecho"));
+	}
+
+	@Test
+	void cargarEntrada_sinTipoEntrada_loGuardaComoMediaRes() throws Exception {
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEjemplo())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.tipoEntrada").value("MediaRes"));
+	}
+
+	@Test
+	void cargarEntrada_conTipoEntradaInvalido_devuelve400() throws Exception {
+		Map<String, Object> body = cuerpoDeEjemplo();
+		body.put("tipoEntrada", "Invalido");
+
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("TIPO_ENTRADA_INVALIDO"));
+	}
+
+	@Test
+	void actualizar_conTipoEntradaNuevo_loActualiza() throws Exception {
+		String respuesta = mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEjemplo())))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		String id = objectMapper.readTree(respuesta).get("id").asText();
+
+		Map<String, Object> edicion = cuerpoDeEjemplo();
+		edicion.put("tipoEntrada", "Rueda");
+
+		mockMvc.perform(put("/api/v1/medias-reses/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tipoEntrada").value("Rueda"));
 	}
 
 	@Test

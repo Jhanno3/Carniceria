@@ -9,23 +9,27 @@ import { TablaCortes } from './components/TablaCortes'
 import { TarjetasPerdida } from './components/TarjetasPerdida'
 import { TarjetasResumen } from './components/TarjetasResumen'
 import { calcularResumen } from './modelo/resumen'
+import { calcularGananciaEstimada } from './modelo/gananciaEstimada'
+import { TIPOS_DE_ENTRADA, cortesHabilitados } from './modelo/tiposDeEntrada'
 import { parsearNumero } from '../../shared/formato/formatoEsAr'
 import { Modal } from '../../shared/ui/Modal'
-import type { CategoriaAnimal } from './api/types'
+import type { CategoriaAnimal, TipoEntrada } from './api/types'
 
 // Clasificación típica de Mercado de Liniers (V17__categoria_animal.sql).
 const CATEGORIAS_ANIMAL: CategoriaAnimal[] = ['Novillo', 'Novillito', 'Vaquillona', 'Vaca', 'Toro', 'Ternero']
 
-// especificacion-carniceria.md, sección 2.2 — PLU provisorio asignado en V3__seed_cortes.sql,
-// cubre los 17 cortes originales nada más (reproduce el ejemplo numérico obligatorio de
-// la especificación: 100 kg → 81 kg vendible). Los 7 cortes nuevos de V21__cortes_nuevos.sql
-// (PLU 16/18/19/20/22/23/24 — los 4 primeros reusan los que dejaron libres Aguja/Marucha/
-// Pecho/Cogote al sacarse en V8) no tienen kg de ejemplo acá: "Restablecer ejemplo" los
-// deja en blanco, no rompe el total del ejemplo original.
+// Ejemplo de referencia real (dueño, 2026-10) para una media res de 100 kg, cubriendo los
+// 28 cortes del catálogo completo (17 originales + 7 de V21__cortes_nuevos.sql + 4
+// reactivados por V22__reactivar_cortes_redundantes.sql) — a diferencia del "ejemplo
+// numérico obligatorio" de especificacion-carniceria.md sección 6 (100 kg → 81 kg
+// vendible, usado como fixture propio en los tests automatizados, no tocado acá), este da
+// 82,8 kg vendibles / 17,2 kg de pérdida. Es solo el prefill de "Restablecer ejemplo", no
+// afecta ningún test.
 const KG_DE_EJEMPLO_POR_PLU: Record<number, number> = {
-  1: 3.0, 2: 1.8, 3: 4.5, 4: 6.0, 5: 2.5, 6: 1.2, 7: 3.0, 8: 1.4,
-  12: 3.3, 9: 1.3, 10: 3.5, 11: 11.0, 13: 1.5, 14: 4.0, 15: 4.0,
-  17: 6.5, 21: 6.5,
+  1: 3.0, 2: 1.8, 3: 4.5, 4: 6.5, 5: 3.5, 6: 2.0, 7: 3.5, 8: 1.6,
+  9: 1.8, 10: 3.0, 11: 7.0, 12: 3.5, 13: 1.5, 14: 3.0, 15: 4.0,
+  16: 2.5, 17: 3.5, 18: 2.5, 19: 0.8, 20: 1.0, 21: 6.0, 22: 1.0,
+  23: 0.6, 24: 1.5, 25: 5.0, 26: 1.2, 27: 4.0, 28: 3.0,
 }
 
 function aNumeroSeguro(texto: string): number {
@@ -50,6 +54,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   const [pesoKgTexto, setPesoKgTexto] = useState('')
   const [precioKgTexto, setPrecioKgTexto] = useState('')
   const [categoria, setCategoria] = useState<CategoriaAnimal | ''>('')
+  const [tipoEntrada, setTipoEntrada] = useState<TipoEntrada>('MediaRes')
   const [modo, setModo] = useState<'manual' | 'automatico' | null>(null)
   const [kgPorCorte, setKgPorCorte] = useState<Record<string, string>>({})
   const [perdidas, setPerdidas] = useState({ hueso: '', grasa: '', merma: '' })
@@ -80,6 +85,19 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
         },
       }),
     [pesoKg, precioKgTexto, kgPorCorteNumerico, perdidas],
+  )
+
+  const precioVentaPorCorte = useMemo(() => {
+    const mapa: Record<string, number | null> = {}
+    for (const corte of cortes ?? []) {
+      mapa[corte.id] = corte.precioVenta == null ? null : Number(corte.precioVenta)
+    }
+    return mapa
+  }, [cortes])
+
+  const gananciaEstimada = useMemo(
+    () => calcularGananciaEstimada(kgPorCorteNumerico, resumen.costoKgVendible, precioVentaPorCorte),
+    [kgPorCorteNumerico, resumen.costoKgVendible, precioVentaPorCorte],
   )
 
   const zonas = useMemo(() => {
@@ -121,10 +139,13 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
       if (kgEjemplo != null) prefill[corte.id] = String(kgEjemplo)
     }
     setKgPorCorte(prefill)
-    setPerdidas({ hueso: '11', grasa: '6', merma: '2' })
+    setPerdidas({ hueso: '8.5', grasa: '6', merma: '2.7' })
     setPesoKgTexto('100')
     setPrecioKgTexto('5200')
     setCategoria('Novillo')
+    // El ejemplo canónico reparte kilos en cortes de varios tipos a la vez (lomo, cuadril,
+    // asado, etc.), así que solo tiene sentido mostrado sin ninguna atenuación.
+    setTipoEntrada('MediaRes')
     setModo('manual')
   }
 
@@ -134,6 +155,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
       pesoKg: aTextoPlano(pesoKgTexto),
       precioKg: precioKgTexto.trim() === '' ? null : aTextoPlano(precioKgTexto),
       categoria: categoria === '' ? null : categoria,
+      tipoEntrada,
       cortes: Object.entries(kgPorCorte)
         .filter(([, texto]) => texto.trim() !== '')
         .map(([corteId, texto]) => ({ corteId, kg: aTextoPlano(texto) })),
@@ -162,23 +184,43 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="categoria" className="text-etiqueta font-medium uppercase text-texto-secundario">
-          Categoría del animal (opcional)
-        </label>
-        <select
-          id="categoria"
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value as CategoriaAnimal | '')}
-          className="h-11 w-full max-w-sm rounded-xl border border-borde-campo px-3 text-cuerpo"
-        >
-          <option value="">Sin especificar</option>
-          {CATEGORIAS_ANIMAL.map((opcion) => (
-            <option key={opcion} value={opcion}>
-              {opcion}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap gap-4">
+        <div className="flex flex-1 flex-col gap-1">
+          <label htmlFor="categoria" className="text-etiqueta font-medium uppercase text-texto-secundario">
+            Categoría del animal (opcional)
+          </label>
+          <select
+            id="categoria"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value as CategoriaAnimal | '')}
+            className="h-11 w-full max-w-sm rounded-xl border border-borde-campo px-3 text-cuerpo"
+          >
+            <option value="">Sin especificar</option>
+            {CATEGORIAS_ANIMAL.map((opcion) => (
+              <option key={opcion} value={opcion}>
+                {opcion}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-1">
+          <label htmlFor="tipo-entrada" className="text-etiqueta font-medium uppercase text-texto-secundario">
+            Corte
+          </label>
+          <select
+            id="tipo-entrada"
+            value={tipoEntrada}
+            onChange={(e) => setTipoEntrada(e.target.value as TipoEntrada)}
+            className="h-11 w-full max-w-sm rounded-xl border border-borde-campo px-3 text-cuerpo"
+          >
+            {TIPOS_DE_ENTRADA.map(({ valor, etiqueta }) => (
+              <option key={valor} value={valor}>
+                {etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <TarjetasResumen
@@ -187,6 +229,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
         precioKgTexto={precioKgTexto}
         onCambiarPrecioKg={setPrecioKgTexto}
         resumen={resumen}
+        gananciaEstimada={gananciaEstimada}
       />
 
       {modo === null ? (
@@ -225,6 +268,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
                   onCambiarKg={(corteId, texto) => setKgPorCorte((previo) => ({ ...previo, [corteId]: texto }))}
                   corteSeleccionadoId={corteSeleccionadoId}
                   onSeleccionarCorte={setCorteSeleccionadoId}
+                  corteNombresHabilitados={cortesHabilitados(tipoEntrada)}
                 />
               </div>
             </div>

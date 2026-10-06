@@ -2,6 +2,8 @@
 // `string` (nunca `number`), igual que en el backend (research.md, "Jackson 3 en
 // Spring Boot 4") — se parsean con modelo/resumen o shared/formato según haga falta.
 
+import type { TipoEntrada } from '../modelo/tiposDeEntrada'
+
 // Movido a shared/api/types.ts (plan-fase3.md, Bloque 5): lo necesita también
 // `control-diario`. Re-exportado acá para no tocar cada punto de esta feature que ya
 // importaba `CorteResponse` desde './types'.
@@ -31,6 +33,9 @@ export interface ResumenDto {
 // para el reporte "por categoría de animal" de Fase 4.
 export type CategoriaAnimal = 'Novillo' | 'Novillito' | 'Vaquillona' | 'Vaca' | 'Toro' | 'Ternero'
 
+// Fase 6, FR-601 — ver modelo/tiposDeEntrada.ts para el mapeo a cortes habilitados.
+export type { TipoEntrada }
+
 export interface MediaResResponse {
   id: string
   fecha: string
@@ -38,6 +43,8 @@ export interface MediaResResponse {
   pesoKg: string
   precioKg: string | null
   categoria: CategoriaAnimal | null
+  /** Siempre presente (nunca null) — "MediaRes" si no se eligió ninguno en particular. */
+  tipoEntrada: TipoEntrada
   despostado: CorteKgDto[]
   perdidas: PerdidasDto
   resumen: ResumenDto
@@ -48,6 +55,7 @@ export interface CargarEntradaRequest {
   pesoKg: string
   precioKg?: string | null
   categoria?: CategoriaAnimal | null
+  tipoEntrada?: TipoEntrada | null
   cortes: CorteKgDto[]
   perdidas?: PerdidasDto | null
 }

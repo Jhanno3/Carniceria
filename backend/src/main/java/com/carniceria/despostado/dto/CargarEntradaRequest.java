@@ -11,6 +11,8 @@ public record CargarEntradaRequest(
 		String precioKg,
 		/** Novillo/Novillito/Vaquillona/Vaca/Toro/Ternero — opcional, para el reporte de Fase 4. */
 		String categoria,
+		/** MediaRes/Delantero/Pecho/Parrillero/AsadoCompleto/Mocho/Rueda — opcional, ausente = MediaRes (Fase 6, FR-601). */
+		String tipoEntrada,
 		@Valid List<CorteKgDto> cortes,
 		PerdidasDto perdidas) {
 

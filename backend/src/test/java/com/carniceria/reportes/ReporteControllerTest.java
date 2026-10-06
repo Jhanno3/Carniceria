@@ -88,7 +88,8 @@ class ReporteControllerTest {
 			LocalDate fecha, String proveedor, MediaResEntity.Categoria categoria, BigDecimal pesoKg,
 			BigDecimal precioKg, BigDecimal vendibleKg, UUID duenoId) {
 		MediaResEntity mediaRes = mediaResRepository.save(
-				new MediaResEntity(fecha, proveedor, pesoKg, precioKg, categoria, duenoId, Instant.now()));
+				new MediaResEntity(fecha, proveedor, pesoKg, precioKg, categoria, MediaResEntity.TipoEntrada.MediaRes,
+						duenoId, Instant.now()));
 		mediaResRepository.flush();
 		despostadoRepository.save(new DespostadoEntity(mediaRes.getId(), corteVacioId, vendibleKg));
 		despostadoRepository.flush();
@@ -208,7 +209,7 @@ class ReporteControllerTest {
 		UUID corteDelOtro = crearCorteDirecto(OTRO_DUENO_TEST_ID);
 		mediaResRepository.save(
 				new MediaResEntity(hoy, "Proveedor del otro negocio", new BigDecimal("100.000"), null, null,
-						OTRO_DUENO_TEST_ID, Instant.now()));
+						MediaResEntity.TipoEntrada.MediaRes, OTRO_DUENO_TEST_ID, Instant.now()));
 		mediaResRepository.flush();
 		jwtClaimsHolder.clear();
 

@@ -6,6 +6,8 @@ interface TablaCortesProps {
   onCambiarKg: (corteId: string, texto: string) => void
   corteSeleccionadoId: string | null
   onSeleccionarCorte: (corteId: string) => void
+  /** Fase 6, FR-602: `null` (o ausente) = sin restricción ("Media res"), nada se atenúa. */
+  corteNombresHabilitados?: Set<string> | null
 }
 
 export function TablaCortes({
@@ -14,6 +16,7 @@ export function TablaCortes({
   onCambiarKg,
   corteSeleccionadoId,
   onSeleccionarCorte,
+  corteNombresHabilitados = null,
 }: TablaCortesProps) {
   const kgMaximo = Math.max(0, ...cortes.map((c) => Number(kgPorCorte[c.id] || 0)));
 
@@ -33,12 +36,13 @@ export function TablaCortes({
           const kgTexto = kgPorCorte[corte.id] ?? ''
           const kg = Number(kgTexto) || 0
           const seleccionada = corte.id === corteSeleccionadoId
+          const habilitado = corteNombresHabilitados === null || corteNombresHabilitados.has(corte.nombre)
           return (
             <tr
               key={corte.id}
               data-testid={`fila-corte-${corte.id}`}
               aria-selected={seleccionada}
-              className={`border-b border-borde/60 last:border-0 hover:bg-fondo-suave-2 ${seleccionada ? 'bg-rosado border-l-4 border-l-vendible' : ''}`}
+              className={`border-b border-borde/60 last:border-0 hover:bg-fondo-suave-2 ${seleccionada ? 'bg-rosado border-l-4 border-l-vendible' : ''} ${habilitado ? '' : 'opacity-50'}`}
             >
               <td className="p-2">
                 <button
@@ -60,8 +64,9 @@ export function TablaCortes({
                   type="text"
                   inputMode="decimal"
                   value={kgTexto}
+                  disabled={!habilitado}
                   onChange={(e) => onCambiarKg(corte.id, e.target.value)}
-                  className="numero h-11 w-24 rounded-xl border border-borde-campo px-2"
+                  className="numero h-11 w-24 rounded-xl border border-borde-campo px-2 disabled:bg-fondo-suave disabled:text-texto-secundario"
                 />
               </td>
               <td className="numero p-2 text-texto-secundario">
