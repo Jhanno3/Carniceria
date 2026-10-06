@@ -7,7 +7,7 @@ Documentos de referencia:
 - [`constitution.md`](constitution.md) — principios que rigen el desarrollo y el stack decidido.
 - [`specs/001-sistema-carniceria/spec.md`](specs/001-sistema-carniceria/spec.md) — spec funcional de las 4 fases (historias de usuario, requisitos funcionales, casos borde).
 - [`specs/001-sistema-carniceria/quickstart.md`](specs/001-sistema-carniceria/quickstart.md) — guión de verificación manual, continuo a través de las fases.
-- `specs/001-sistema-carniceria/fase{1,2,3}/` — plan, modelo de datos, contrato de API y tareas de cada fase ya planificada o implementada.
+- `specs/001-sistema-carniceria/fase{1,2,3,4}/` — plan, modelo de datos, contrato de API y tareas de cada fase ya planificada o implementada.
 
 ## Stack tecnológico
 
@@ -71,6 +71,4 @@ cd frontend && npm run test
 
 ## Estado actual
 
-- **Fase 1 (Despostado)** y **Fase 2 (Escaneo y stock)** implementadas — ver [`fase1/tasks.md`](specs/001-sistema-carniceria/fase1/tasks.md) y [`fase2/tasks-fase2.md`](specs/001-sistema-carniceria/fase2/tasks-fase2.md) para el detalle y su progreso. Pendiente de esta última: la verificación manual de `quickstart.md` (T115).
-- **Fase 3 (Sin conexión y anulación)** planificada, implementación no empezada — ver [`fase3/tasks-fase3.md`](specs/001-sistema-carniceria/fase3/tasks-fase3.md).
-- **Fase 4 (Reportes)** sin planificar todavía.
+- **Fase 1 (Despostado)**, **Fase 2 (Escaneo y stock)**, **Fase 3 (Sin conexión y anulación)** y **Fase 4 (Reportes, + listado completo de cuentas y pausar/reactivar acceso en "Usuarios")** implementadas — ver [`fase1/tasks.md`](specs/001-sistema-carniceria/fase1/tasks.md), [`fase2/tasks-fase2.md`](specs/001-sistema-carniceria/fase2/tasks-fase2.md), [`fase3/tasks-fase3.md`](specs/001-sistema-carniceria/fase3/tasks-fase3.md) y [`fase4/tasks-fase4.md`](specs/001-sistema-carniceria/fase4/tasks-fase4.md) para el detalle y su progreso. Pendiente en todas: la verificación manual final de `quickstart.md` (T115/T153/T185).

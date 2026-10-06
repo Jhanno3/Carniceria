@@ -19,7 +19,7 @@ public class PerfilEntity {
 	}
 
 	public enum Estado {
-		pendiente, aprobado, rechazado
+		pendiente, aprobado, rechazado, pausado
 	}
 
 	@Id

@@ -12,6 +12,9 @@ public interface PerfilRepository extends JpaRepository<PerfilEntity, UUID> {
 
 	List<PerfilEntity> findByEstadoOrderByNombreAsc(PerfilEntity.Estado estado);
 
+	// Fase 4 (FR-405): "Usuarios" lista todas las cuentas, cualquier estado.
+	List<PerfilEntity> findAllByOrderByNombreAsc();
+
 	// UPDATE explícito (no mutar la entidad administrada por Hibernate y confiar en el
 	// flush): PerfilEntity no tiene @Version, así que si RLS bloquea la escritura
 	// (porque quien llama puede LEER su propia fila pero no escribirla), Hibernate no

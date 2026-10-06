@@ -16,9 +16,12 @@ import type { CategoriaAnimal } from './api/types'
 // Clasificación típica de Mercado de Liniers (V17__categoria_animal.sql).
 const CATEGORIAS_ANIMAL: CategoriaAnimal[] = ['Novillo', 'Novillito', 'Vaquillona', 'Vaca', 'Toro', 'Ternero']
 
-// especificacion-carniceria.md, sección 2.2 — PLU provisorio asignado en V3__seed_cortes.sql.
-// Aguja/Marucha/Pecho/Cogote (16/18/19/20) se sacaron del catálogo en V8 — ver
-// V8__eliminar_cortes_redundantes.sql.
+// especificacion-carniceria.md, sección 2.2 — PLU provisorio asignado en V3__seed_cortes.sql,
+// cubre los 17 cortes originales nada más (reproduce el ejemplo numérico obligatorio de
+// la especificación: 100 kg → 81 kg vendible). Los 7 cortes nuevos de V21__cortes_nuevos.sql
+// (PLU 16/18/19/20/22/23/24 — los 4 primeros reusan los que dejaron libres Aguja/Marucha/
+// Pecho/Cogote al sacarse en V8) no tienen kg de ejemplo acá: "Restablecer ejemplo" los
+// deja en blanco, no rompe el total del ejemplo original.
 const KG_DE_EJEMPLO_POR_PLU: Record<number, number> = {
   1: 3.0, 2: 1.8, 3: 4.5, 4: 6.0, 5: 2.5, 6: 1.2, 7: 3.0, 8: 1.4,
   12: 3.3, 9: 1.3, 10: 3.5, 11: 11.0, 13: 1.5, 14: 4.0, 15: 4.0,
@@ -199,19 +202,33 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
             sinAsignarKg={resumen.sinAsignarKg}
           />
 
-          <MapaCortes
-            zonas={zonas}
-            zonaResaltada={corteSeleccionado?.zonaMapa ?? null}
-            detalle={detalle}
-          />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+            <div className="flex flex-col gap-2 rounded-xl border border-borde p-4">
+              <h2 className="text-titulo-seccion font-titulos font-bold text-texto">Mapa de cortes</h2>
+              <MapaCortes
+                zonas={zonas}
+                zonaResaltada={corteSeleccionado?.zonaMapa ?? null}
+                detalle={detalle}
+              />
+            </div>
 
-          <TablaCortes
-            cortes={cortes ?? []}
-            kgPorCorte={kgPorCorte}
-            onCambiarKg={(corteId, texto) => setKgPorCorte((previo) => ({ ...previo, [corteId]: texto }))}
-            corteSeleccionadoId={corteSeleccionadoId}
-            onSeleccionarCorte={setCorteSeleccionadoId}
-          />
+            <div className="flex flex-col rounded-xl border border-borde">
+              <div className="flex items-baseline justify-between gap-2 border-b border-borde p-4">
+                <h2 className="text-titulo-seccion font-titulos font-bold text-texto">Cortes vendibles</h2>
+                <p className="text-etiqueta text-texto-secundario">Valores de ejemplo reemplazados por tus pesadas</p>
+              </div>
+              {/* Scroll propio (max-h + overflow-y-auto), independiente del scroll de la página. */}
+              <div className="max-h-[32rem] overflow-y-auto">
+                <TablaCortes
+                  cortes={cortes ?? []}
+                  kgPorCorte={kgPorCorte}
+                  onCambiarKg={(corteId, texto) => setKgPorCorte((previo) => ({ ...previo, [corteId]: texto }))}
+                  corteSeleccionadoId={corteSeleccionadoId}
+                  onSeleccionarCorte={setCorteSeleccionadoId}
+                />
+              </div>
+            </div>
+          </div>
 
           <TarjetasPerdida
             pesoKg={pesoKg}

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa de cortes de media res</title>
+<!--
+  MAPA DE CORTES · referencia para el agente
+
+  Solo el mapa. Los kilos vienen de afuera (la app ya los tiene):
+    MapaCortes.render(svg, { kgPorCorte, seleccionado, onSeleccion })
+
+  - kgPorCorte:  { asado: 11, nalga: 6, cuadrada: 2.5, ... }  (ids de CORTE_A_ZONA)
+  - seleccionado: id de corte o null. Su zona se marca con borde negro.
+  - onSeleccion:  función(idCorte) que se llama al tocar una zona.
+
+  Cómo funciona:
+  1. ZONAS: polígonos con coordenadas fijas en un viewBox de 620 x 340
+     (cabeza a la izquierda). NO reinventar las coordenadas.
+  2. CORTE_A_ZONA: varios cortes pueden compartir zona
+     (nalga + cuadrada + tapa de nalga -> "nalga"). Picada no tiene zona.
+  3. COLOR: se suman los kg por zona; la zona más pesada es la más oscura.
+     t = kg_zona / kg_max -> mezcla(claro, oscuro, 0.12 + 0.88 * t).
+     Si t > 0.5 el texto va en blanco.
+  4. ORDEN DE DIBUJO: silueta gris -> zonas -> textos.
+  5. Cortes de esta versión: matambre, asado, vacío, falda, osobuco, espinazo,
+     paleta, roast beef, chingolo, tortuga, nalga, cuadrada, bola de lomo,
+     cuadril, peceto, colita de cuadril, entraña, asado americano,
+     bife de chorizo, lomo, marucha, aguja con hueso, cogote, pecho
+     y bife ancho. La silueta queda cubierta completa.
+  6. Etiquetas: `fuera: true` = texto fuera de la zona (gris);
+     `rot: -90` = texto vertical para zonas angostas.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@600&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; padding: 24px; font-family: "Public Sans", sans-serif; background: #FFFFFF; }
+  .mapa-cortes { width: 100%; max-width: 720px; height: auto; display: block; margin: 0 auto; }
+  .mapa-cortes polygon.zona { cursor: pointer; transition: fill 0.2s; }
+  .mapa-cortes polygon.zona:focus { outline: none; }
+  .mapa-cortes polygon.zona:focus-visible { stroke: #2F5D8A; stroke-width: 4; }
+  .mapa-cortes text { pointer-events: none; font-family: "Public Sans", sans-serif; font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .mapa-cortes polygon.zona { transition: none; } }
+</style>
+</head>
+<body>
+
+<svg id="mapa" class="mapa-cortes" viewBox="0 20 620 325" role="group" aria-label="Esquema de la media res con los cortes coloreados según su peso"></svg>
+
+<script>
+const MapaCortes = (() => {
+  // Silueta de fondo: tapa los huecos entre zonas.
+  const SILUETA = "40,90 110,58 210,50 480,44 555,50 578,110 560,150 552,215 548,215 540,312 505,312 492,215 470,210 440,234 255,247 165,252 160,312 128,312 120,252 85,242 68,195 44,160";
+
+  const ZONAS = [
+    // Cuarto delantero
+    { id: "cogote",         nombre: "Cogote",          poligonos: ["40,90 110,60 120,180 70,195 45,160"],               etiquetas: [{ x: 80,  y: 140, size: 11 }] },
+    { id: "pecho",          nombre: "Pecho",           poligonos: ["70,195 120,180 160,198 155,250 85,240"],            etiquetas: [{ x: 115, y: 220, size: 11 }] },
+    { id: "bifeAncho",      nombre: "Bife ancho",      poligonos: ["250,53 305,51 305,105 250,105"],                    etiquetas: [{ x: 277, y: 84,  size: 10 }] },
+    { id: "agujaConHueso",  nombre: "Aguja c/ hueso",  poligonos: ["110,62 195,56 195,128 115,132"],                    etiquetas: [{ x: 153, y: 98,  size: 10 }] },
+    { id: "roastBeef",      nombre: "Roast beef",      poligonos: ["195,56 250,53 250,105 195,105"],                    etiquetas: [{ x: 222, y: 84,  size: 10 }] },
+    { id: "asadoAmericano", nombre: "Asado americano", poligonos: ["195,105 305,105 322,104 322,127 195,129"],          etiquetas: [{ x: 258, y: 120, size: 9 }] },
+    { id: "chingolo",       nombre: "Chingolo",        poligonos: ["115,132 152,131 152,158 117,158"],                  etiquetas: [{ x: 134, y: 148, size: 8 }] },
+    { id: "marucha",        nombre: "Marucha",         poligonos: ["152,131 195,128 196,157 152,158"],                  etiquetas: [{ x: 174, y: 147, size: 8 }] },
+    { id: "paleta",         nombre: "Paleta",          poligonos: ["117,158 196,157 198,198 160,198 120,180"],          etiquetas: [{ x: 160, y: 182, size: 11 }] },
+    { id: "asado",          nombre: "Asado",           poligonos: ["195,129 322,127 325,192 198,198"],                  etiquetas: [{ x: 260, y: 166, size: 12 }] },
+    { id: "falda",          nombre: "Falda",           poligonos: ["160,198 198,198 262,195 255,245 155,250"],          etiquetas: [{ x: 210, y: 226, size: 11 }] },
+
+    // Medio (costillar / flanco)
+    { id: "entrana",        nombre: "Entraña",         poligonos: ["322,104 340,104 343,190 325,192"],                  etiquetas: [{ x: 333, y: 148, size: 9, rot: -90 }] },
+    { id: "vacio",          nombre: "Vacío",           poligonos: ["340,122 440,122 445,150 480,150 470,198 343,190"],  etiquetas: [{ x: 400, y: 165, size: 12 }] },
+    { id: "matambre",       nombre: "Matambre",        poligonos: ["262,195 325,192 343,190 470,198 440,232 255,245"],  etiquetas: [{ x: 352, y: 220, size: 11 }] },
+
+    // Cuarto trasero
+    { id: "bifeChorizo",    nombre: "Bife de chorizo", poligonos: ["305,51 400,48 400,104 340,104 305,105"],            etiquetas: [{ x: 352, y: 82,  size: 10 }] },
+    { id: "lomo",           nombre: "Lomo",            poligonos: ["340,104 480,101 480,122 340,122"],                  etiquetas: [{ x: 410, y: 116, size: 10 }] },
+    { id: "cuadril",        nombre: "Cuadril",         poligonos: ["400,48 480,45 480,101 400,103"],                    etiquetas: [{ x: 440, y: 80,  size: 11 }] },
+    { id: "colitaCuadril",  nombre: "Colita",          poligonos: ["440,122 480,122 480,150 445,150"],                  etiquetas: [{ x: 461, y: 139, size: 8 }] },
+    { id: "nalga",          nombre: "Nalga",           poligonos: ["480,45 555,51 568,90 480,95"],                      etiquetas: [{ x: 522, y: 76,  size: 11 }] },
+    { id: "cuadrada",       nombre: "Cuadrada",        poligonos: ["480,95 568,90 575,110 563,140 480,140"],            etiquetas: [{ x: 524, y: 121, size: 10 }] },
+    { id: "bolaDeLomo",     nombre: "Bola de lomo",    poligonos: ["480,140 521,140 521,215 490,215"],                  etiquetas: [{ x: 503, y: 178, size: 9, rot: -90 }] },
+    { id: "peceto",         nombre: "Peceto",          poligonos: ["521,140 563,140 560,150 552,215 521,215"],          etiquetas: [{ x: 539, y: 178, size: 10, rot: -90 }] },
+    { id: "tortuga",        nombre: "Tortuga",         poligonos: ["490,215 552,215 549,250 497,250"],                  etiquetas: [{ x: 521, y: 236, size: 10 }] },
+
+    // Patas y hueso
+    { id: "osobuco",        nombre: "Osobuco",         poligonos: ["122,252 163,252 158,310 130,310", "497,250 549,250 540,310 506,310"],
+                                                        etiquetas: [{ x: 144, y: 330, size: 11, fuera: true }, { x: 523, y: 330, size: 11, fuera: true }] },
+    // Va al final para quedar dibujado encima del borde superior.
+    { id: "espinazo",       nombre: "Espinazo",        poligonos: ["110,58 210,50 480,43 480,52 210,59 110,67"],
+                                                        etiquetas: [{ x: 300, y: 36, size: 11, fuera: true }] }
+  ];
+
+  // Qué zona pinta cada corte. Acá cada corte tiene su propia zona.
+  // Adaptar los ids a los de tu base de datos.
+  const CORTE_A_ZONA = {
+    matambre: "matambre", asado: "asado", vacio: "vacio", falda: "falda",
+    osobuco: "osobuco", espinazo: "espinazo", paleta: "paleta",
+    roastBeef: "roastBeef", chingolo: "chingolo", tortuga: "tortuga",
+    nalga: "nalga", cuadrada: "cuadrada", bolaDeLomo: "bolaDeLomo",
+    cuadril: "cuadril", peceto: "peceto", colitaCuadril: "colitaCuadril",
+    entrana: "entrana", asadoAmericano: "asadoAmericano",
+    bifeChorizo: "bifeChorizo", lomo: "lomo", marucha: "marucha",
+    agujaConHueso: "agujaConHueso",
+    cogote: "cogote", pecho: "pecho", bifeAncho: "bifeAncho"
+  };
+
+  const NS = "http://www.w3.org/2000/svg";
+
+  function kgPorZona(kgPorCorte) {
+    const total = {};
+    for (const [corte, kg] of Object.entries(kgPorCorte || {})) {
+      const zona = CORTE_A_ZONA[corte];
+      if (!zona || !(kg > 0)) continue;
+      total[zona] = (total[zona] || 0) + kg;
+    }
+    return total;
+  }
+
+  function mezclar(t) {
+    const claro = [246, 228, 224], oscuro = [110, 20, 20];
+    return `rgb(${claro.map((v, i) => Math.round(v + (oscuro[i] - v) * t)).join(",")})`;
+  }
+
+  function colorZona(kg, kgMax) {
+    if (!kg || kgMax <= 0) return { relleno: "#EEECEA", texto: "#1C1917" };
+    const t = kg / kgMax;
+    return { relleno: mezclar(0.12 + 0.88 * t), texto: t > 0.5 ? "#FFFFFF" : "#1C1917" };
+  }
+
+  function crear(tag, attrs) {
+    const el = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  function formatear(n) {
+    return n.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
+  function render(svg, { kgPorCorte = {}, seleccionado = null, onSeleccion = null } = {}) {
+    svg.replaceChildren();
+    const porZona = kgPorZona(kgPorCorte);
+    const kgMax = Math.max(0, ...Object.values(porZona));
+    const zonaSel = seleccionado ? CORTE_A_ZONA[seleccionado] : null;
+
+    // a) silueta
+    svg.appendChild(crear("polygon", { points: SILUETA, fill: "#E7E5E4" }));
+
+    // b) zonas
+    for (const z of ZONAS) {
+      const { relleno } = colorZona(porZona[z.id], kgMax);
+      const activa = z.id === zonaSel;
+      const elegir = () => {
+        if (!onSeleccion) return;
+        const primero = Object.keys(CORTE_A_ZONA).find(c => CORTE_A_ZONA[c] === z.id);
+        if (primero) onSeleccion(primero);
+      };
+      for (const pts of z.poligonos) {
+        const p = crear("polygon", {
+          points: pts,
+          fill: relleno,
+          stroke: activa ? "#111111" : "#FFFFFF",
+          "stroke-width": activa ? 4 : 1.5,
+          "stroke-linejoin": "round",
+          class: "zona",
+          tabindex: "0",
+          role: "button",
+          "aria-label": `${z.nombre}: ${formatear(porZona[z.id] || 0)} kg`
+        });
+        p.addEventListener("click", elegir);
+        p.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); elegir(); }
+        });
+        svg.appendChild(p);
+      }
+    }
+
+    // c) textos
+    for (const z of ZONAS) {
+      const { texto } = colorZona(porZona[z.id], kgMax);
+      for (const et of z.etiquetas) {
+        const attrs = {
+          x: et.x, y: et.y, "font-size": et.size, "text-anchor": "middle",
+          "dominant-baseline": "middle",
+          fill: et.fuera ? "#57534E" : texto
+        };
+        if (et.rot) attrs.transform = `rotate(${et.rot} ${et.x} ${et.y})`;
+        const t = crear("text", attrs);
+        t.textContent = z.nombre;
+        svg.appendChild(t);
+      }
+    }
+  }
+
+  return { render, ZONAS, CORTE_A_ZONA, SILUETA, colorZona, kgPorZona };
+})();
+
+/* ---- Demo: reemplazar por los kilos reales de tu app ---- */
+const svg = document.getElementById("mapa");
+const kgEjemplo = {
+  matambre: 1.3, asado: 9, vacio: 3.3, falda: 4, osobuco: 3.5, espinazo: 3,
+  paleta: 5, roastBeef: 2.5, chingolo: 0.8, tortuga: 1, nalga: 6, cuadrada: 2.5,
+  bolaDeLomo: 3, cuadril: 2.3, peceto: 1.4, colitaCuadril: 0.7, entrana: 0.8,
+  asadoAmericano: 2, bifeChorizo: 4.5, lomo: 1.8, marucha: 1.5, agujaConHueso: 7,
+  cogote: 3.5, pecho: 3.5, bifeAncho: 4
+};
+let sel = null;
+function dibujar() {
+  MapaCortes.render(svg, {
+    kgPorCorte: kgEjemplo,
+    seleccionado: sel,
+    onSeleccion: id => { sel = sel === id ? null : id; dibujar(); }
+  });
+}
+dibujar();
+</script>
+</body>
+</html>

@@ -5,10 +5,10 @@ import type { PerfilResponse } from './types'
 interface ActualizarPerfilInput {
   id: string
   rol: 'admin' | 'dueno' | 'empleado'
-  estado: 'pendiente' | 'aprobado' | 'rechazado'
+  estado: 'pendiente' | 'aprobado' | 'rechazado' | 'pausado'
 }
 
-/** PUT /perfiles/{id} — aprobar, rechazar, o cambiar el rol de una cuenta (solo admin). */
+/** PUT /perfiles/{id} — aprobar, rechazar, pausar/reactivar, o cambiar el rol de una cuenta (solo admin). */
 export function useActualizarPerfil() {
   const queryClient = useQueryClient()
 
@@ -19,7 +19,7 @@ export function useActualizarPerfil() {
         body: JSON.stringify({ rol, estado }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['perfiles', 'pendiente'] })
+      queryClient.invalidateQueries({ queryKey: ['perfiles'] })
     },
   })
 }

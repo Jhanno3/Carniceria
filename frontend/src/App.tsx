@@ -7,9 +7,10 @@ import { DespostadoPage } from './features/despostado/DespostadoPage'
 import { InicioPage } from './features/inicio/InicioPage'
 import { usePerfilPropio } from './features/perfiles/api/usePerfilPropio'
 import { UsuariosPage } from './features/perfiles/UsuariosPage'
+import { ReportesPage } from './features/reportes/ReportesPage'
 import { supabase } from './shared/supabase/cliente'
 
-type Seccion = 'inicio' | 'despostado' | 'control-diario' | 'ajustes' | 'usuarios'
+type Seccion = 'inicio' | 'despostado' | 'control-diario' | 'ajustes' | 'reportes' | 'usuarios'
 
 function CerrarSesion() {
   return (
@@ -35,12 +36,14 @@ function EstadoDeCuenta({ mensaje }: { mensaje: string }) {
 function NavOperativa({
   mostrarInicioYDespostado,
   mostrarAjustes,
+  mostrarReportes,
   mostrarUsuarios,
   seccion,
   onCambiarSeccion,
 }: {
   mostrarInicioYDespostado: boolean
   mostrarAjustes: boolean
+  mostrarReportes: boolean
   mostrarUsuarios: boolean
   seccion: Seccion
   onCambiarSeccion: (s: Seccion) => void
@@ -65,6 +68,7 @@ function NavOperativa({
         {mostrarInicioYDespostado && pastilla('despostado', 'Despostado')}
         {pastilla('control-diario', 'Control diario')}
         {mostrarAjustes && pastilla('ajustes', 'Ajustes')}
+        {mostrarReportes && pastilla('reportes', 'Reportes')}
         {mostrarUsuarios && pastilla('usuarios', 'Usuarios')}
       </div>
       <button
@@ -102,6 +106,10 @@ function AppAutenticada() {
     return <EstadoDeCuenta mensaje="Tu solicitud fue rechazada. Consultá con el administrador." />
   }
 
+  if (perfil.estado === 'pausado') {
+    return <EstadoDeCuenta mensaje="Tu cuenta fue pausada. Consultá con el administrador." />
+  }
+
   const esAdmin = perfil.rol === 'admin'
   // "Dueño de sí mismo" (duenoId === su propio id), no "rol === dueno" a secas: cubre
   // tanto a un dueño real como a un admin que también opera su propio negocio de prueba
@@ -116,7 +124,7 @@ function AppAutenticada() {
     const seccionesDisponibles: Seccion[] = [
       ...(operaNegocio ? (['inicio', 'despostado'] as const) : []),
       'control-diario',
-      ...(operaNegocio ? (['ajustes'] as const) : []),
+      ...(operaNegocio ? (['ajustes', 'reportes'] as const) : []),
       ...(esAdmin ? (['usuarios'] as const) : []),
     ]
     const porDefecto: Seccion = operaNegocio ? 'inicio' : esEmpleado ? 'control-diario' : 'usuarios'
@@ -127,6 +135,7 @@ function AppAutenticada() {
         <NavOperativa
           mostrarInicioYDespostado={operaNegocio}
           mostrarAjustes={operaNegocio}
+          mostrarReportes={operaNegocio}
           mostrarUsuarios={esAdmin}
           seccion={seccionEfectiva}
           onCambiarSeccion={setSeccion}
@@ -135,6 +144,7 @@ function AppAutenticada() {
         {seccionEfectiva === 'despostado' && <DespostadoPage onIrAInicio={() => setSeccion('inicio')} />}
         {seccionEfectiva === 'control-diario' && <ControlDiarioPage />}
         {seccionEfectiva === 'ajustes' && <AjustesPage />}
+        {seccionEfectiva === 'reportes' && <ReportesPage />}
         {seccionEfectiva === 'usuarios' && <UsuariosPage />}
       </>
     )

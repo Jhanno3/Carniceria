@@ -56,8 +56,8 @@ Ordenado cronológicamente por `periodoInicio`. `periodo` inválido (no es `dia`
 
 `estado` pasa a ser **opcional** (antes tenía `defaultValue = "pendiente"`). Sin `estado`,
 devuelve **todas** las cuentas del sistema, cualquier estado, ordenadas por nombre — sigue
-exclusivo de `admin` (RLS, sin cambios). Con `estado` (`pendiente`/`aprobado`/`rechazado`),
-se comporta exactamente igual que antes.
+exclusivo de `admin` (RLS, sin cambios). Con `estado` (`pendiente`/`aprobado`/`rechazado`/
+`pausado`), se comporta exactamente igual que antes.
 
 ```json
 GET /perfiles
@@ -67,4 +67,29 @@ GET /perfiles
   { "id": "uuid", "nombre": "Ana Gómez", "rol": "empleado", "estado": "pendiente", "duenoId": null },
   ...
 ]
+```
+
+## `PUT /perfiles/{id}` — cambios sobre Fase 1 (FR-406)
+
+`estado` acepta un cuarto valor, `pausado` (además de `pendiente`/`aprobado`/`rechazado`):
+revoca el acceso operativo de la cuenta de inmediato, sin importar su rol — ver
+`plan-fase4.md` 3.7 para por qué esto necesitó corregir `mi_negocio_id()`, no solo agregar
+el valor al `enum`. Reactivar es el mismo `PUT` con `estado: "aprobado"` y el mismo `rol`
+de antes.
+
+```json
+// request (pausar)
+{ "rol": "empleado", "estado": "pausado" }
+
+// request (reactivar)
+{ "rol": "empleado", "estado": "aprobado" }
+```
+
+Nuevo caso de error: un `admin` que apunta a **su propia** cuenta (`id` == su propio
+`sub` del JWT) siempre lo rechaza, sea cual sea el cambio pedido — evita que quede
+bloqueado sin otro `admin` que lo revierta.
+
+```json
+403 Forbidden
+{ "error": "NO_PUEDE_MODIFICAR_SU_PROPIA_CUENTA", "mensaje": "No podés cambiar tu propia cuenta desde acá." }
 ```

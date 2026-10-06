@@ -137,3 +137,59 @@ paso 26), `colaVentas.test.ts` (la cola misma) y `VentasDeHoy.test.tsx` (cuándo
 el botón, paso 29/30). Lo que el test automatizado no puede probar es la integración real
 con DevTools → Network → Offline y el evento `online` del navegador — por eso siguen siendo
 pasos manuales.
+
+---
+
+# Quickstart — Fase 4: Reportes, listado completo de cuentas y pausar acceso
+
+Continúa la numeración de Fase 3. Reproduce US-4.1/4.3/4.4 de `spec.md` sección 5 y
+`fase4/plan-fase4.md`. Requiere haber hecho antes los pasos 1 a 30 (medias reses cargadas
+en varias fechas/proveedores/categorías para que los reportes tengan algo que agrupar).
+
+## Verificación
+
+31. Como `dueno`, ir a **Reportes** → sección "Por proveedor", con el rango de fechas por
+    defecto (últimos 30 días).
+    - **Esperado:** una fila por proveedor cargado en ese rango, con cantidad de entradas,
+      rendimiento promedio y costo por kg vendible; las entradas sin proveedor cargado
+      aparecen agrupadas como "Sin proveedor" al final de la tabla, no excluidas.
+32. Elegir un rango de fechas sin ninguna media res cargada (ej. el año pasado) y tocar
+    "Aplicar", en cualquiera de las 3 secciones.
+    - **Esperado:** mensaje neutro ("No hay datos para el rango elegido"), nunca un error
+      ni una tabla vacía sin explicación (`spec.md` 5.3).
+33. En "Por período", cambiar el selector de "Semana" a "Día" y a "Mes", sin tocar las
+    fechas.
+    - **Esperado:** la tabla se reagrupa (más filas con "Día", menos con "Mes", para el
+      mismo rango) sin tener que tocar "Aplicar" de nuevo.
+34. Como `empleado`, intentar entrar a **Reportes**.
+    - **Esperado:** la pestaña ni siquiera aparece en la navegación (FR-305: reportes es
+      solo para quien opera el negocio).
+35. Como `admin`, entrar a **Usuarios** y mirar la tabla "Todas las cuentas".
+    - **Esperado:** aparecen cuentas en cualquier estado (aprobadas, rechazadas,
+      pendientes), no solo las pendientes de aprobación de la sección de arriba.
+36. En esa misma tabla, hacer click en "Pausar" sobre una cuenta aprobada (de prueba, no la
+    propia).
+    - **Esperado:** la fila pasa a mostrar estado "pausado" y el botón cambia a
+      "Reactivar". Si esa cuenta tiene una sesión abierta en otra pestaña/navegador, su
+      próximo pedido al backend falla (sin esperar a que expire su sesión de Supabase).
+37. Iniciar sesión con la cuenta pausada del paso 36 (o recargar su pestaña si seguía
+    abierta).
+    - **Esperado:** mensaje "Tu cuenta fue pausada. Consultá con el administrador.", no la
+      aplicación normal ni una pantalla rota.
+38. Como `admin`, click en "Reactivar" sobre esa misma cuenta.
+    - **Esperado:** vuelve a aparecer "Pausar"; la cuenta recupera el acceso al toque.
+39. Como `admin`, en la propia fila (la cuenta con la que está logueado) buscar los botones
+    de Pausar/Aprobar/Rechazar.
+    - **Esperado:** no existen — no hay forma de tocarse la propia cuenta desde esta
+      pantalla (FR-406, evita quedar bloqueado sin otro admin que lo revierta).
+
+## Correspondencia con tests automatizados
+
+Los pasos 31-39 ya están cubiertos por tests automatizados: `ReporteControllerTest` (los 3
+reportes, el caso "sin datos" del paso 32, el ponderado por kilos), `AgregadorRendimientoTest`/
+`CalculadorPeriodoTest` (el cálculo puro detrás del paso 33), `PerfilControllerTest` (el
+listado completo del paso 35, el efecto real de pausar sobre `GET /cortes` del paso 36, y
+el guardia de auto-modificación del paso 39), `TablaReporte.test.tsx`/`UsuariosPage.test.tsx`
+(qué se muestra y qué botón aparece en cada caso). Lo que el test automatizado no puede
+probar es la experiencia real de punta a punta con dos sesiones de navegador distintas
+(pasos 36-37) — por eso siguen siendo pasos manuales.

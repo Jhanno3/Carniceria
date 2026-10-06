@@ -33,7 +33,7 @@ describe('MapaCortes', () => {
       />,
     )
 
-    expect(screen.getByTestId('zona-vacio')).toHaveAttribute('stroke-width', '3')
+    expect(screen.getByTestId('zona-vacio')).toHaveAttribute('stroke-width', '4')
     expect(screen.getByText('Vacío · 3,3 kg · 3,3 % de la media res')).toBeInTheDocument()
   })
 

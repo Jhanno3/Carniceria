@@ -162,6 +162,8 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 
 **US-4.3** — Como admin, veo el listado completo de todas las cuentas creadas (no solo las pendientes de aprobación), para tener visibilidad total del sistema sin tener que aprobar o rechazar cada una primero. *(Agregado 2026-10-05, a pedido del dueño — no es un reporte de rendimiento, se agrupó en esta fase por pedirse junto con ella.)*
 
+**US-4.4** — Como admin, puedo pausar el acceso de cualquier cuenta (dueño o empleado) sin borrarla, y reactivarla después, para manejar una baja temporal o definitiva sin perder el historial de esa cuenta. *(Agregado 2026-10-05, a pedido del dueño, mismo panel de "Usuarios" que US-4.3.)*
+
 ### 5.2 Requisitos funcionales
 
 | ID | Requisito |
@@ -171,10 +173,13 @@ Una aplicación web de uso interno para una carnicería: registra el despostado 
 | FR-403 | El sistema genera un reporte de rendimiento agrupado por `medias_reses.categoria` (Novillo, Novillito, Vaquillona, Vaca, Toro, Ternero), para un rango de fechas elegido. Las medias reses sin categoría cargada quedan agrupadas aparte, no se excluyen del reporte. |
 | ~~FR-404~~ | ~~Todo reporte se puede exportar a Excel.~~ Descartado (decisión del dueño, 2026-10-04): no se construye. |
 | FR-405 | El `admin` puede listar todas las cuentas del sistema (cualquier `estado`), con nombre, rol y estado de cada una, en la pantalla "Usuarios". Ningún otro rol tiene acceso (ya lo impone RLS desde `V9__rol_admin.sql`). |
+| FR-406 | El `admin` puede cambiar el estado de cualquier cuenta aprobada a `pausado` (revoca su acceso operativo de inmediato, sin excepción por rol — incluye a un `empleado`, no solo a un `dueno`) y volver a `aprobado` después, reutilizando `PUT /perfiles/{id}`. Un `admin` no puede pausarse, rechazarse ni cambiarse el rol a sí mismo (evita quedar bloqueado sin otro `admin` que lo revierta). |
 
 ### 5.3 Casos borde
 
 - Rango de fechas sin medias reses cerradas: el reporte se muestra vacío con un mensaje, no como error.
+- Una cuenta pausada que todavía tiene una sesión abierta (JWT válido) pierde el acceso en el próximo pedido, no recién cuando el JWT expira: el chequeo de `estado = 'aprobado'` se hace contra la base en cada pedido, no contra algo cacheado en el JWT.
+- Un `admin` que intenta pausarse, rechazarse o cambiarse el rol a sí mismo: rechazado explícitamente (FR-406), no solo desalentado por la interfaz.
 
 > **Resuelto (decisión del dueño, 2026-10-04):** la pregunta abierta sobre el reporte "por categoría de animal" (sección 9 de la especificación original) se resolvió agregando una columna real `categoria` a `medias_reses` (`V17__categoria_animal.sql`, ver `fase1/data-model.md`), opcional, con la clasificación típica del Mercado de Liniers. Ver FR-403 arriba y `fase1/contracts/despostado-api.md` para el campo en la API de carga.
 
@@ -233,7 +238,7 @@ No se detectaron contradicciones entre esta spec y la constitución.
 ## 10. Preguntas abiertas
 
 - **Marca/modelo de la balanza y formato exacto de su etiqueta EAN-13**: no bloquea esta spec porque FR-202 exige que el formato sea configurable (`config_etiqueta`) desde el día uno.
-- **Agrupación por período en FR-402** (día/semana/mes): a definir en el plan de Fase 4.
+- ~~Agrupación por período en FR-402 (día/semana/mes): a definir en el plan de Fase 4.~~ **Resuelto:** es un parámetro que elige el dueño en la pantalla de Reportes (`periodo=dia|semana|mes`), no un reporte fijo — ver `fase4/plan-fase4.md` 3.4.
 
 ---
 

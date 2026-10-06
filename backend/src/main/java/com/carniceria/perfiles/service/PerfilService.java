@@ -54,17 +54,29 @@ public class PerfilService {
 		return PerfilResponse.de(perfil);
 	}
 
+	/** Sin {@code estadoTexto} (null), lista todas las cuentas sin filtrar (FR-405). */
 	@Transactional
 	public List<PerfilResponse> listarPorEstado(String estadoTexto) {
-		Estado estado = parsearEstado(estadoTexto);
-		return perfilRepository.findByEstadoOrderByNombreAsc(estado).stream()
+		List<PerfilEntity> perfiles = estadoTexto == null
+				? perfilRepository.findAllByOrderByNombreAsc()
+				: perfilRepository.findByEstadoOrderByNombreAsc(parsearEstado(estadoTexto));
+		return perfiles.stream()
 				.map(PerfilResponse::de)
 				.toList();
 	}
 
-	/** Solo admin (RLS): aprueba/rechaza cuentas de dueño, o cambia el rol de cualquiera. */
+	/**
+	 * Solo admin (RLS): aprueba/rechaza/pausa/reactiva cuentas, o cambia el rol de
+	 * cualquiera. {@code actorId} nunca puede ser {@code id}: un admin (o cualquiera) que
+	 * se apunta a sí mismo queda rechazado antes de tocar nada (FR-406) — sin esto, un
+	 * admin podría pausarse/rechazarse/sacarse el rol de admin y quedar bloqueado sin
+	 * otro admin que lo revierta.
+	 */
 	@Transactional
-	public PerfilResponse actualizar(UUID id, PerfilActualizarRequest request) {
+	public PerfilResponse actualizar(UUID id, PerfilActualizarRequest request, UUID actorId) {
+		if (id.equals(actorId)) {
+			throw new NoPuedeModificarSuPropiaCuentaException();
+		}
 		Rol rol = parsearRol(request.rol());
 		Estado estado = parsearEstado(request.estado());
 
