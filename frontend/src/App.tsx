@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { AjustesPage } from './features/ajustes/AjustesPage'
 import { AuthPage } from './features/auth/AuthPage'
 import { ControlDiarioPage } from './features/control-diario/ControlDiarioPage'
+import { CortesPage } from './features/cortes/CortesPage'
 import { DespostadoPage } from './features/despostado/DespostadoPage'
 import { InicioPage } from './features/inicio/InicioPage'
 import { usePerfilPropio } from './features/perfiles/api/usePerfilPropio'
@@ -10,7 +11,7 @@ import { UsuariosPage } from './features/perfiles/UsuariosPage'
 import { ReportesPage } from './features/reportes/ReportesPage'
 import { supabase } from './shared/supabase/cliente'
 
-type Seccion = 'inicio' | 'despostado' | 'control-diario' | 'ajustes' | 'reportes' | 'usuarios'
+type Seccion = 'inicio' | 'despostado' | 'control-diario' | 'cortes' | 'ajustes' | 'reportes' | 'usuarios'
 
 function CerrarSesion() {
   return (
@@ -35,6 +36,7 @@ function EstadoDeCuenta({ mensaje }: { mensaje: string }) {
 
 function NavOperativa({
   mostrarInicioYDespostado,
+  mostrarCortes,
   mostrarAjustes,
   mostrarReportes,
   mostrarUsuarios,
@@ -42,6 +44,7 @@ function NavOperativa({
   onCambiarSeccion,
 }: {
   mostrarInicioYDespostado: boolean
+  mostrarCortes: boolean
   mostrarAjustes: boolean
   mostrarReportes: boolean
   mostrarUsuarios: boolean
@@ -67,6 +70,7 @@ function NavOperativa({
         {mostrarInicioYDespostado && pastilla('inicio', 'Inicio')}
         {mostrarInicioYDespostado && pastilla('despostado', 'Despostado')}
         {pastilla('control-diario', 'Control diario')}
+        {mostrarCortes && pastilla('cortes', 'Editar cortes')}
         {mostrarAjustes && pastilla('ajustes', 'Ajustes')}
         {mostrarReportes && pastilla('reportes', 'Reportes')}
         {mostrarUsuarios && pastilla('usuarios', 'Usuarios')}
@@ -124,7 +128,7 @@ function AppAutenticada() {
     const seccionesDisponibles: Seccion[] = [
       ...(operaNegocio ? (['inicio', 'despostado'] as const) : []),
       'control-diario',
-      ...(operaNegocio ? (['ajustes', 'reportes'] as const) : []),
+      ...(operaNegocio ? (['cortes', 'ajustes', 'reportes'] as const) : []),
       ...(esAdmin ? (['usuarios'] as const) : []),
     ]
     const porDefecto: Seccion = operaNegocio ? 'inicio' : esEmpleado ? 'control-diario' : 'usuarios'
@@ -134,6 +138,7 @@ function AppAutenticada() {
       <>
         <NavOperativa
           mostrarInicioYDespostado={operaNegocio}
+          mostrarCortes={operaNegocio}
           mostrarAjustes={operaNegocio}
           mostrarReportes={operaNegocio}
           mostrarUsuarios={esAdmin}
@@ -143,6 +148,7 @@ function AppAutenticada() {
         {seccionEfectiva === 'inicio' && <InicioPage />}
         {seccionEfectiva === 'despostado' && <DespostadoPage onIrAInicio={() => setSeccion('inicio')} />}
         {seccionEfectiva === 'control-diario' && <ControlDiarioPage />}
+        {seccionEfectiva === 'cortes' && <CortesPage />}
         {seccionEfectiva === 'ajustes' && <AjustesPage />}
         {seccionEfectiva === 'reportes' && <ReportesPage />}
         {seccionEfectiva === 'usuarios' && <UsuariosPage />}

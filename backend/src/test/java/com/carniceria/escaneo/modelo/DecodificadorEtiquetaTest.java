@@ -13,13 +13,13 @@ class DecodificadorEtiquetaTest {
 			20, 29, 2, 5, 7, 5, ConfigEtiqueta.TipoValor.peso, 3);
 
 	@Test
-	void codigoDeLaEspecificacion_decodificaPluYKg() {
+	void codigoDeLaEspecificacion_decodificaPluYValor() {
 		ResultadoDecodificacion resultado = DecodificadorEtiqueta.decodificar("2000012012501", CONFIG_DE_EJEMPLO);
 
 		assertThat(resultado).isInstanceOf(ResultadoDecodificacion.Exito.class);
 		ResultadoDecodificacion.Exito exito = (ResultadoDecodificacion.Exito) resultado;
 		assertThat(exito.plu()).isEqualTo(12);
-		assertThat(exito.kg()).isEqualByComparingTo(new BigDecimal("1.250"));
+		assertThat(exito.valor()).isEqualByComparingTo(new BigDecimal("1.250"));
 	}
 
 	@Test
@@ -45,10 +45,12 @@ class DecodificadorEtiquetaTest {
 	}
 
 	@Test
-	void valorEnCero_devuelvePesoCero() {
-		// "200001200000" + dígito verificador 3 — PLU 12, valor 00000.
+	void valorEnCero_sigueSiendoExito_elChequeoDePesoCeroSeMovioACalculadorVenta() {
+		// "200001200000" + dígito verificador 3 — PLU 12, valor 00000. El decodificador ya
+		// no decide si 0 es un error (Fase 5, FR-502: eso ahora es CalculadorVenta.PesoCero).
 		ResultadoDecodificacion resultado = DecodificadorEtiqueta.decodificar("2000012000003", CONFIG_DE_EJEMPLO);
 
-		assertThat(resultado).isInstanceOf(ResultadoDecodificacion.PesoCero.class);
+		assertThat(resultado).isInstanceOf(ResultadoDecodificacion.Exito.class);
+		assertThat(((ResultadoDecodificacion.Exito) resultado).valor()).isEqualByComparingTo(BigDecimal.ZERO);
 	}
 }

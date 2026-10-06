@@ -6,8 +6,10 @@ import com.carniceria.escaneo.dto.EscanearRequest;
 import com.carniceria.escaneo.dto.VentaResponse;
 import com.carniceria.escaneo.entity.ConfigEtiquetaEntity;
 import com.carniceria.escaneo.entity.VentaEntity;
+import com.carniceria.escaneo.modelo.CalculadorVenta;
 import com.carniceria.escaneo.modelo.DecodificadorEtiqueta;
 import com.carniceria.escaneo.modelo.ResultadoDecodificacion;
+import com.carniceria.escaneo.modelo.ResultadoVenta;
 import com.carniceria.escaneo.repository.ConfigEtiquetaRepository;
 import com.carniceria.escaneo.repository.VentaRepository;
 import com.carniceria.perfiles.entity.PerfilEntity;
@@ -58,15 +60,19 @@ public class VentaService {
 				.orElseThrow(AccesoDenegadoException::new);
 
 		ResultadoDecodificacion resultado = DecodificadorEtiqueta.decodificar(request.codigo(), config.aDominio());
-		ResultadoDecodificacion.Exito exito = traducirOFallar(resultado);
+		ResultadoDecodificacion.Exito decodificado = traducirDecodificacionOFallar(resultado);
 
-		CorteEntity corte = corteRepository.findByPlu(exito.plu())
+		CorteEntity corte = corteRepository.findByPlu(decodificado.plu())
 				.filter(CorteEntity::isActivo)
 				.orElseThrow(PluInexistenteException::new);
 
+		ResultadoVenta resultadoVenta = CalculadorVenta.calcular(
+				decodificado.valor(), config.getTipoValor(), corte.getPrecioVenta());
+		ResultadoVenta.Exito exito = traducirVentaOFallar(resultadoVenta);
+
 		VentaEntity venta = new VentaEntity(
-				corte.getId(), exito.kg(), request.codigo(), request.idClienteLocal(), usuarioId, duenoId,
-				Instant.now());
+				corte.getId(), exito.kg(), exito.importe(), request.codigo(), request.idClienteLocal(), usuarioId,
+				duenoId, Instant.now());
 		ventaRepository.save(venta);
 		// Id generado en memoria (GenerationType.UUID): mismo motivo que CorteService.crear,
 		// forzar el flush acá para que un rechazo de RLS se traduzca en este mismo pedido.
@@ -105,13 +111,20 @@ public class VentaService {
 		return ventas.map(this::construirRespuesta).toList();
 	}
 
-	private ResultadoDecodificacion.Exito traducirOFallar(ResultadoDecodificacion resultado) {
+	private ResultadoDecodificacion.Exito traducirDecodificacionOFallar(ResultadoDecodificacion resultado) {
 		return switch (resultado) {
 			case ResultadoDecodificacion.Exito exito -> exito;
 			case ResultadoDecodificacion.DigitoVerificadorInvalido ignored ->
 					throw new DigitoVerificadorInvalidoException();
 			case ResultadoDecodificacion.PrefijoInvalido ignored -> throw new PrefijoInvalidoException();
-			case ResultadoDecodificacion.PesoCero ignored -> throw new PesoCeroException();
+		};
+	}
+
+	private ResultadoVenta.Exito traducirVentaOFallar(ResultadoVenta resultado) {
+		return switch (resultado) {
+			case ResultadoVenta.Exito exito -> exito;
+			case ResultadoVenta.PesoCero ignored -> throw new PesoCeroException();
+			case ResultadoVenta.FaltaPrecioVenta ignored -> throw new CorteSinPrecioVentaException();
 		};
 	}
 

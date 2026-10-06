@@ -2,10 +2,14 @@ package com.carniceria.despostado.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.carniceria.cortes.dto.CorteRequest;
+import com.carniceria.cortes.entity.CorteEntity;
 import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
+import com.carniceria.cortes.service.CorteService;
 import com.carniceria.despostado.entity.DespostadoEntity;
 import com.carniceria.despostado.entity.MediaResEntity;
+import com.carniceria.despostado.modelo.IngresoCortesPorMediaRes;
 import com.carniceria.despostado.modelo.VendibleKgPorMediaRes;
 import com.carniceria.shared.NegocioTestFixtures;
 import com.carniceria.shared.security.JwtClaimsHolder;
@@ -46,6 +50,9 @@ class DespostadoRepositoryTest {
 
 	@Autowired
 	private DespostadoRepository despostadoRepository;
+
+	@Autowired
+	private CorteService corteService;
 
 	private UUID corteVacioId;
 	private UUID corteAsadoId;
@@ -95,5 +102,41 @@ class DespostadoRepositoryTest {
 				.findFirst()
 				.orElseThrow()
 				.vendibleKg();
+	}
+
+	@Test
+	void sumaKgYValorVentaPorMediaRes_soloCuentaLosCortesConPrecioVenta() {
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+
+		// Ejemplo canónico de la especificación: media res de 100 kg, 81 kg vendibles. De
+		// esos 81 kg, 60 son de un corte con precioVenta=9000 y 21 de otro sin precioVenta.
+		fijarPrecioVenta(corteVacioId, "9000.00");
+		// corteAsadoId se deja sin precioVenta a propósito.
+
+		MediaResEntity mediaRes = mediaResRepository.save(new MediaResEntity(
+				LocalDate.now(), "Proveedor A", new BigDecimal("100.000"), new BigDecimal("5000.00"), null,
+				DUENO_TEST_ID, Instant.now()));
+		mediaResRepository.flush();
+		despostadoRepository.save(new DespostadoEntity(mediaRes.getId(), corteVacioId, new BigDecimal("60.000")));
+		despostadoRepository.save(new DespostadoEntity(mediaRes.getId(), corteAsadoId, new BigDecimal("21.000")));
+		despostadoRepository.flush();
+
+		List<IngresoCortesPorMediaRes> resultado = despostadoRepository.sumarKgYValorVentaPorMediaRes(
+				List.of(mediaRes.getId()));
+
+		assertThat(resultado).hasSize(1);
+		IngresoCortesPorMediaRes ingreso = resultado.get(0);
+		assertThat(ingreso.mediaResId()).isEqualTo(mediaRes.getId());
+		assertThat(ingreso.kgConPrecioVenta()).isEqualByComparingTo("60.000");
+		assertThat(ingreso.importeConPrecioVenta()).isEqualByComparingTo("540000.00");
+
+		jwtClaimsHolder.clear();
+	}
+
+	private void fijarPrecioVenta(UUID corteId, String precioVenta) {
+		CorteEntity corte = corteRepository.findById(corteId).orElseThrow();
+		corteService.actualizar(corteId, new CorteRequest(
+				corte.getNombre(), corte.getPlu(), corte.getCuarto().name(), corte.getZonaMapa(),
+				corte.isActivo(), precioVenta));
 	}
 }

@@ -8,7 +8,7 @@ describe('TablaReporte', () => {
     expect(screen.getByText(/no hay datos/i)).toBeInTheDocument()
   })
 
-  it('muestra una fila por grupo con cantidad, rendimiento y costo', () => {
+  it('muestra una fila por grupo con cantidad, rendimiento, costo y beneficio', () => {
     render(
       <TablaReporte
         etiquetaGrupo="Proveedor"
@@ -19,6 +19,7 @@ describe('TablaReporte', () => {
             cantidadEntradas: 3,
             rendimientoPromedioPorc: '86.36',
             costoKgVendiblePromedio: '1263',
+            beneficioPorKgVendible: '2580',
           },
         ]}
       />,
@@ -28,18 +29,25 @@ describe('TablaReporte', () => {
     expect(screen.getByText('3')).toBeInTheDocument()
     expect(screen.getByText(/86,36 %/)).toBeInTheDocument()
     expect(screen.getByText(/\$ 1\.263/)).toBeInTheDocument()
+    expect(screen.getByText(/\$ 2\.580/)).toBeInTheDocument()
   })
 
-  it('un grupo sin valor (null) se muestra con la etiqueta de "sin valor", y el costo null como "—"', () => {
+  it('un grupo sin valor (null) se muestra con la etiqueta de "sin valor", y el costo/beneficio null como "—"', () => {
     render(
       <TablaReporte
         etiquetaGrupo="Categoría"
         etiquetaSinValor="Sin categoría"
-        filas={[{ grupo: null, cantidadEntradas: 1, rendimientoPromedioPorc: '75.00', costoKgVendiblePromedio: null }]}
+        filas={[{
+          grupo: null,
+          cantidadEntradas: 1,
+          rendimientoPromedioPorc: '75.00',
+          costoKgVendiblePromedio: null,
+          beneficioPorKgVendible: null,
+        }]}
       />,
     )
 
     expect(screen.getByText('Sin categoría')).toBeInTheDocument()
-    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getAllByText('—')).toHaveLength(2)
   })
 })

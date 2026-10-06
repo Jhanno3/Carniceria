@@ -1,9 +1,11 @@
 package com.carniceria.cortes.dto;
 
 import com.carniceria.cortes.entity.CorteEntity;
+import com.carniceria.shared.BigDecimals;
 import java.util.UUID;
 
-public record CorteResponse(UUID id, String nombre, Integer plu, String cuarto, String zonaMapa, boolean activo) {
+public record CorteResponse(
+		UUID id, String nombre, Integer plu, String cuarto, String zonaMapa, boolean activo, String precioVenta) {
 
 	public static CorteResponse de(CorteEntity entity) {
 		return new CorteResponse(
@@ -12,6 +14,7 @@ public record CorteResponse(UUID id, String nombre, Integer plu, String cuarto, 
 				entity.getPlu(),
 				entity.getCuarto().name(),
 				entity.getZonaMapa(),
-				entity.isActivo());
+				entity.isActivo(),
+				BigDecimals.aTexto(entity.getPrecioVenta()));
 	}
 }

@@ -143,6 +143,121 @@ class CorteControllerTest {
 	}
 
 	@Test
+	void actualizarCorte_conPrecioVenta_loPersisteYLoDevuelveEnLaRespuesta() throws Exception {
+		String id = crearCorteDePrueba(9004);
+
+		Map<String, Object> edicion = new java.util.HashMap<>();
+		edicion.put("nombre", "Con precio");
+		edicion.put("plu", 9004);
+		edicion.put("cuarto", "Ambos");
+		edicion.put("zonaMapa", null);
+		edicion.put("precioVenta", "9000.00");
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.precioVenta").value("9000.00"));
+	}
+
+	@Test
+	void actualizarCorte_conPrecioVentaNull_loDejaSinPrecio() throws Exception {
+		String id = crearCorteDePrueba(9005);
+
+		Map<String, Object> primeraEdicion = new java.util.HashMap<>();
+		primeraEdicion.put("nombre", "Con precio");
+		primeraEdicion.put("plu", 9005);
+		primeraEdicion.put("cuarto", "Ambos");
+		primeraEdicion.put("zonaMapa", null);
+		primeraEdicion.put("precioVenta", "9000.00");
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(primeraEdicion)))
+				.andExpect(status().isOk());
+
+		Map<String, Object> segundaEdicion = new java.util.HashMap<>();
+		segundaEdicion.put("nombre", "Sin precio");
+		segundaEdicion.put("plu", 9005);
+		segundaEdicion.put("cuarto", "Ambos");
+		segundaEdicion.put("zonaMapa", null);
+		segundaEdicion.put("precioVenta", null);
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(segundaEdicion)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.precioVenta").isEmpty());
+	}
+
+	@Test
+	void actualizarCorte_conPrecioVentaNegativo_devuelve400SinLlegarALaBase() throws Exception {
+		String id = crearCorteDePrueba(9006);
+
+		Map<String, Object> edicion = new java.util.HashMap<>();
+		edicion.put("nombre", "Precio inválido");
+		edicion.put("plu", 9006);
+		edicion.put("cuarto", "Ambos");
+		edicion.put("zonaMapa", null);
+		edicion.put("precioVenta", "-100");
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("DATOS_INVALIDOS"));
+	}
+
+	@Test
+	void empleado_leePrecioVentaDeCadaCorte_noQuedaOculto() throws Exception {
+		String id = crearCorteDePrueba(9007);
+
+		Map<String, Object> edicion = new java.util.HashMap<>();
+		edicion.put("nombre", "Visible para empleado");
+		edicion.put("plu", 9007);
+		edicion.put("cuarto", "Ambos");
+		edicion.put("zonaMapa", null);
+		edicion.put("precioVenta", "6500.00");
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isOk());
+
+		jwtClaimsHolder.set("{\"sub\":\"" + EMPLEADO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		negocioTestFixtures.registrarComoEmpleado(EMPLEADO_TEST_ID, "Empleado de CorteControllerTest", DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		String respuestaListado = mockMvc.perform(
+						get("/api/v1/cortes").with(jwtDeEmpleado()).param("incluirInactivos", "true"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+
+		com.fasterxml.jackson.databind.JsonNode corteCreado = java.util.stream.StreamSupport.stream(
+						objectMapper.readTree(respuestaListado).spliterator(), false)
+				.filter(nodo -> nodo.get("plu").asInt() == 9007)
+				.findFirst()
+				.orElseThrow();
+		org.junit.jupiter.api.Assertions.assertEquals("6500.00", corteCreado.get("precioVenta").asText());
+	}
+
+	private String crearCorteDePrueba(int plu) throws Exception {
+		Map<String, Object> alta = new java.util.HashMap<>();
+		alta.put("nombre", "Corte de prueba " + plu);
+		alta.put("plu", plu);
+		alta.put("cuarto", "Ambos");
+		alta.put("zonaMapa", null);
+
+		String respuesta = mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(alta)))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+
+		return objectMapper.readTree(respuesta).get("id").asText();
+	}
+
+	@Test
 	void empleadoDelMismoNegocio_puedeLeerPeroNoCrearCortes() throws Exception {
 		// Regresión de V11__fix_dueno_todo_exige_rol.sql: antes de esa migración,
 		// "cortes_dueno_todo" solo miraba dueno_id (no el rol), así que un empleado del

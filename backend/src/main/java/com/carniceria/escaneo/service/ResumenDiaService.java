@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,8 +56,22 @@ public class ResumenDiaService {
 				.map(StockPorCorteEntity::getStockKg)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
+		// FR-503: mismo criterio de exclusión que kgVendidosHoy (ignora anuladas), más las
+		// que no tienen precioTotal (corte sin precioVenta al momento de venderse) — esas ni
+		// suman ni se cuentan como "recaudadas", pero sí se informan aparte.
+		BigDecimal dineroRecaudadoHoy = ventasDelDia.stream()
+				.filter(venta -> !venta.isAnulada())
+				.map(VentaEntity::getPrecioTotal)
+				.filter(Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		long ventasSinPrecioHoy = ventasDelDia.stream()
+				.filter(venta -> !venta.isAnulada())
+				.filter(venta -> venta.getPrecioTotal() == null)
+				.count();
+
 		return new ResumenDiaResponse(
 				BigDecimals.aTexto(kgVendidosHoy), ventasDelDia.size(),
-				BigDecimals.aTexto(stockVendibleTotal), entradasHoy);
+				BigDecimals.aTexto(stockVendibleTotal), entradasHoy,
+				BigDecimals.aTexto(dineroRecaudadoHoy), (int) ventasSinPrecioHoy);
 	}
 }

@@ -69,7 +69,8 @@ class ReporteControllerTest {
 
 	private UUID crearCorteDirecto(UUID duenoId) {
 		var corte = new com.carniceria.cortes.entity.CorteEntity(
-				"Corte de prueba", 1, com.carniceria.cortes.entity.CorteEntity.Cuarto.Ambos, null, true, duenoId);
+				"Corte de prueba", 1, com.carniceria.cortes.entity.CorteEntity.Cuarto.Ambos, null, true, null,
+				duenoId);
 		corte = corteRepositoryGuardar(corte);
 		return corte.getId();
 	}

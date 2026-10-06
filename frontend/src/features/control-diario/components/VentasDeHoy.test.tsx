@@ -26,6 +26,7 @@ function venta(
     corteId: 'c1',
     corteNombre,
     kg: '1.000',
+    precioTotal: null,
     codigoLeido: '',
     anulada: false,
     usuarioId: USUARIO_ACTUAL,

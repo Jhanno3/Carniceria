@@ -1,4 +1,5 @@
 import type { MediaResResponse } from '../../despostado/api/types'
+import type { VentaResponse } from '../../control-diario/api/types'
 
 export interface ResumenMes {
   cantidadEntradas: number
@@ -7,6 +8,10 @@ export interface ResumenMes {
   rendimientoPromedioPorc: number | null
   /** Promedio ponderado (costoTotal/vendibleKg); ignora entradas sin precio de compra cargado. */
   costoKgVendiblePromedio: number | null
+  /** FR-504: suma de precioTotal de ventas no anuladas del mes (excluye las sin precio). */
+  dineroRecaudadoMes: number
+  /** Ventas no anuladas del mes sin precioTotal (corte sin precioVenta al momento de venderse). */
+  ventasSinPrecioMes: number
 }
 
 /** Las cadenas numéricas que devuelve el backend usan punto decimal (BigDecimal.toString()),
@@ -17,7 +22,7 @@ function aNumero(texto: string | null): number | null {
   return Number.isNaN(valor) ? null : valor
 }
 
-export function calcularResumenMes(entradas: MediaResResponse[]): ResumenMes {
+export function calcularResumenMes(entradas: MediaResResponse[], ventas: VentaResponse[]): ResumenMes {
   let pesoKgTotal = 0
   let vendibleKgTotal = 0
   let costoTotalConPrecio = 0
@@ -36,10 +41,27 @@ export function calcularResumenMes(entradas: MediaResResponse[]): ResumenMes {
     }
   }
 
+  // FR-504: mismo criterio de exclusión que el "Recaudado hoy" de Control diario (FR-503)
+  // — ignora anuladas; las que no tienen precioTotal ni suman ni se cuentan como
+  // recaudadas, pero sí se informan aparte (ventasSinPrecioMes).
+  let dineroRecaudadoMes = 0
+  let ventasSinPrecioMes = 0
+  for (const venta of ventas) {
+    if (venta.anulada) continue
+    const precioTotal = aNumero(venta.precioTotal)
+    if (precioTotal == null) {
+      ventasSinPrecioMes += 1
+    } else {
+      dineroRecaudadoMes += precioTotal
+    }
+  }
+
   return {
     cantidadEntradas: entradas.length,
     vendibleKgTotal,
     rendimientoPromedioPorc: pesoKgTotal > 0 ? (vendibleKgTotal / pesoKgTotal) * 100 : null,
     costoKgVendiblePromedio: vendibleKgConPrecio > 0 ? costoTotalConPrecio / vendibleKgConPrecio : null,
+    dineroRecaudadoMes,
+    ventasSinPrecioMes,
   }
 }

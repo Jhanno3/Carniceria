@@ -21,10 +21,18 @@ public final class AgregadorRendimiento {
 	}
 
 	/** Lo mínimo que hace falta de cada media res para agregar — ver ResumenDespostado (Fase 1). */
-	public record Entrada(BigDecimal pesoKg, BigDecimal precioKg, BigDecimal vendibleKg) {
+	public record Entrada(
+			BigDecimal pesoKg, BigDecimal precioKg, BigDecimal vendibleKg,
+			// Fase 5, FR-505: a diferencia de precioKg (null excluye TODA la entrada del
+			// costo), acá null se trata como 0 al sumar — una media res puede tener algunos
+			// cortes con precioVenta y otros sin él (DespostadoRepository ya filtró eso), así
+			// que la entrada entera sigue aportando por la parte que sí tiene precio.
+			BigDecimal kgConPrecioVenta, BigDecimal importeConPrecioVenta) {
 	}
 
-	public record Resultado(int cantidadEntradas, BigDecimal rendimientoPromedioPorc, BigDecimal costoKgVendiblePromedio) {
+	public record Resultado(
+			int cantidadEntradas, BigDecimal rendimientoPromedioPorc, BigDecimal costoKgVendiblePromedio,
+			BigDecimal precioVentaPromedioPonderado, BigDecimal beneficioPorKgVendiblePromedio) {
 	}
 
 	public static Resultado agregar(List<Entrada> entradas) {
@@ -32,6 +40,8 @@ public final class AgregadorRendimiento {
 		BigDecimal vendibleTotal = BigDecimal.ZERO;
 		BigDecimal costoTotalSumado = BigDecimal.ZERO;
 		BigDecimal vendibleConCostoTotal = BigDecimal.ZERO;
+		BigDecimal kgConPrecioVentaTotal = BigDecimal.ZERO;
+		BigDecimal importeConPrecioVentaTotal = BigDecimal.ZERO;
 
 		for (Entrada entrada : entradas) {
 			pesoTotal = pesoTotal.add(entrada.pesoKg());
@@ -39,6 +49,12 @@ public final class AgregadorRendimiento {
 			if (entrada.precioKg() != null) {
 				costoTotalSumado = costoTotalSumado.add(entrada.pesoKg().multiply(entrada.precioKg()));
 				vendibleConCostoTotal = vendibleConCostoTotal.add(entrada.vendibleKg());
+			}
+			if (entrada.kgConPrecioVenta() != null) {
+				kgConPrecioVentaTotal = kgConPrecioVentaTotal.add(entrada.kgConPrecioVenta());
+			}
+			if (entrada.importeConPrecioVenta() != null) {
+				importeConPrecioVentaTotal = importeConPrecioVentaTotal.add(entrada.importeConPrecioVenta());
 			}
 		}
 
@@ -52,6 +68,16 @@ public final class AgregadorRendimiento {
 				? null
 				: costoTotalSumado.divide(vendibleConCostoTotal, new MathContext(10)).setScale(ESCALA_PESOS, REDONDEO);
 
-		return new Resultado(entradas.size(), rendimientoPromedioPorc, costoKgVendiblePromedio);
+		BigDecimal precioVentaPromedioPonderado = kgConPrecioVentaTotal.signum() == 0
+				? null
+				: importeConPrecioVentaTotal.divide(kgConPrecioVentaTotal, new MathContext(10))
+						.setScale(ESCALA_PESOS, REDONDEO);
+
+		BigDecimal beneficioPorKgVendiblePromedio = precioVentaPromedioPonderado == null || costoKgVendiblePromedio == null
+				? null
+				: precioVentaPromedioPonderado.subtract(costoKgVendiblePromedio);
+
+		return new Resultado(entradas.size(), rendimientoPromedioPorc, costoKgVendiblePromedio,
+				precioVentaPromedioPonderado, beneficioPorKgVendiblePromedio);
 	}
 }

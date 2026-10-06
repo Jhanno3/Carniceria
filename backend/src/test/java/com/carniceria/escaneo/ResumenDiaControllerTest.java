@@ -3,9 +3,11 @@ package com.carniceria.escaneo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.carniceria.cortes.entity.CorteEntity;
 import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
 import com.carniceria.escaneo.service.ConfigEtiquetaInicialService;
@@ -74,6 +76,33 @@ class ResumenDiaControllerTest {
 		return jwt().jwt(j -> j.subject(DUENO_TEST_ID.toString()).claim("role", "authenticated"));
 	}
 
+	// Por el endpoint real (PUT /cortes/{id}), no por el repositorio directo — ver el
+	// comentario de VentaTestFixtures sobre por qué RlsSessionAspect necesita un MockMvc real.
+	private void fijarPrecioVentaDeVacio(String precioVenta) throws Exception {
+		CorteEntity corte = corteRepository.findById(corteVacioId).orElseThrow();
+		Map<String, Object> edicion = new HashMap<>();
+		edicion.put("nombre", corte.getNombre());
+		edicion.put("plu", corte.getPlu());
+		edicion.put("cuarto", corte.getCuarto().name());
+		edicion.put("zonaMapa", corte.getZonaMapa());
+		edicion.put("precioVenta", precioVenta);
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", corteVacioId).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isOk());
+	}
+
+	private String escanear(String codigo) throws Exception {
+		Map<String, Object> cuerpo = Map.of("codigo", codigo, "idClienteLocal", UUID.randomUUID().toString());
+		String respuesta = mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpo)))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		return objectMapper.readTree(respuesta).get("id").asText();
+	}
+
 	@Test
 	void sinFecha_usaHoyYCuentaVentasYEntradasDelDia() throws Exception {
 		Map<String, Object> despostado = new HashMap<>();
@@ -132,12 +161,40 @@ class ResumenDiaControllerTest {
 	}
 
 	@Test
+	void dineroRecaudadoHoy_sumaPrecioTotalExcluyendoAnuladasYSinPrecio() throws Exception {
+		// Vacío sin precioVenta todavía: venta sin precio registrado (FR-503).
+		escanear(CODIGO_VACIO);
+
+		fijarPrecioVentaDeVacio("6500.00"); // 1,250 kg * 6500 = 8125
+		escanear(CODIGO_VACIO);
+
+		fijarPrecioVentaDeVacio("4800.00"); // 1,250 kg * 4800 = 6000
+		escanear(CODIGO_VACIO);
+
+		fijarPrecioVentaDeVacio("4000.00"); // 1,250 kg * 4000 = 5000, pero se anula
+		String ventaAAnularId = escanear(CODIGO_VACIO);
+		mockMvc.perform(post("/api/v1/ventas/" + ventaAAnularId + "/anular").with(jwtDeDueno()))
+				.andExpect(status().isOk());
+
+		// "14125.00", no "14125": precio_total es numeric(12,2) — a diferencia de la venta
+		// recién creada (que todavía vive en memoria, escala 0 de CalculadorVenta), esta
+		// lectura viene fresca de la base, con la escala declarada de la columna (mismo
+		// criterio que precioVenta en CorteControllerTest, Bloque 1).
+		mockMvc.perform(get("/api/v1/control-diario/resumen").with(jwtDeDueno()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.dineroRecaudadoHoy").value("14125.00"))
+				.andExpect(jsonPath("$.ventasSinPrecioHoy").value(1));
+	}
+
+	@Test
 	void conFechaSinActividad_devuelveTodoEnCero() throws Exception {
 		mockMvc.perform(get("/api/v1/control-diario/resumen").with(jwtDeDueno())
 						.param("fecha", LocalDate.now().minusDays(10).toString()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.kgVendidosHoy").value("0"))
 				.andExpect(jsonPath("$.etiquetasEscaneadasHoy").value(0))
-				.andExpect(jsonPath("$.entradasHoy").value(0));
+				.andExpect(jsonPath("$.entradasHoy").value(0))
+				.andExpect(jsonPath("$.dineroRecaudadoHoy").value("0"))
+				.andExpect(jsonPath("$.ventasSinPrecioHoy").value(0));
 	}
 }

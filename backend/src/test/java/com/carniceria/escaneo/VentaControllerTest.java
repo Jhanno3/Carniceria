@@ -3,9 +3,11 @@ package com.carniceria.escaneo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.carniceria.cortes.entity.CorteEntity;
 import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
 import com.carniceria.escaneo.service.ConfigEtiquetaInicialService;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,6 +104,42 @@ class VentaControllerTest {
 		return Map.of("codigo", codigo, "idClienteLocal", idClienteLocal.toString());
 	}
 
+	// Por el endpoint real (PUT /cortes/{id}), no por el repositorio directo: RlsSessionAspect
+	// solo propaga el JWT de forma confiable a través de un @Transactional real disparado por
+	// un proxy de Spring (ver el comentario de VentaTestFixtures) — un MockMvc.perform(...)
+	// pasa por el stack completo (controller → service → repository) y no tiene ese problema.
+	private void fijarPrecioVentaDeVacio(String precioVenta) throws Exception {
+		CorteEntity corte = corteRepository.findById(corteVacioId).orElseThrow();
+		Map<String, Object> edicion = new HashMap<>();
+		edicion.put("nombre", corte.getNombre());
+		edicion.put("plu", corte.getPlu());
+		edicion.put("cuarto", corte.getCuarto().name());
+		edicion.put("zonaMapa", corte.getZonaMapa());
+		edicion.put("precioVenta", precioVenta);
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", corteVacioId).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isOk());
+	}
+
+	private void fijarTipoValor(String tipoValor) throws Exception {
+		Map<String, Object> config = new HashMap<>();
+		config.put("prefijoDesde", 20);
+		config.put("prefijoHasta", 29);
+		config.put("inicioPlu", 2);
+		config.put("largoPlu", 5);
+		config.put("inicioValor", 7);
+		config.put("largoValor", 5);
+		config.put("tipoValor", tipoValor);
+		config.put("decimales", 3);
+
+		mockMvc.perform(put("/api/v1/config-etiqueta").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(config)))
+				.andExpect(status().isOk());
+	}
+
 	@Test
 	void escanear_conCodigoValido_devuelve201ConVentaRegistrada() throws Exception {
 		mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
@@ -182,6 +221,44 @@ class VentaControllerTest {
 								cuerpoDeEscaneo(CODIGO_PLU_INEXISTENTE, UUID.randomUUID()))))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error").value("PLU_INEXISTENTE"));
+	}
+
+	@Test
+	void escanear_corteConPrecioVenta_laVentaQuedaConPrecioTotal() throws Exception {
+		fijarPrecioVentaDeVacio("6500.00");
+
+		mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEscaneo(CODIGO_VALIDO, UUID.randomUUID()))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.kg").value("1.250"))
+				.andExpect(jsonPath("$.precioTotal").value("8125"));
+	}
+
+	@Test
+	void escanear_corteSinPrecioVenta_laVentaSeCreaIgualConPrecioTotalNull() throws Exception {
+		mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEscaneo(CODIGO_VALIDO, UUID.randomUUID()))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.precioTotal").isEmpty());
+	}
+
+	@Test
+	void escanear_tipoValorImporteSinPrecioVenta_devuelve400YNoCreaLaVenta() throws Exception {
+		fijarTipoValor("importe");
+
+		mockMvc.perform(post("/api/v1/ventas").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(cuerpoDeEscaneo(CODIGO_VALIDO, UUID.randomUUID()))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("CORTE_SIN_PRECIO_VENTA"));
+
+		mockMvc.perform(get("/api/v1/ventas").with(jwtDeDueno())
+						.param("desde", LocalDate.now().toString())
+						.param("hasta", LocalDate.now().toString()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
 	}
 
 	@Test

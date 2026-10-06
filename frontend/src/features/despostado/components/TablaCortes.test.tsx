@@ -5,8 +5,8 @@ import { TablaCortes } from './TablaCortes'
 import type { CorteResponse } from '../api/types'
 
 const cortes: CorteResponse[] = [
-  { id: 'c1', nombre: 'Vacío', plu: 12, cuarto: 'Trasero', zonaMapa: 'vacio', activo: true },
-  { id: 'c2', nombre: 'Asado', plu: 11, cuarto: 'Delantero', zonaMapa: 'asado', activo: true },
+  { id: 'c1', nombre: 'Vacío', plu: 12, cuarto: 'Trasero', zonaMapa: 'vacio', activo: true, precioVenta: null },
+  { id: 'c2', nombre: 'Asado', plu: 11, cuarto: 'Delantero', zonaMapa: 'asado', activo: true, precioVenta: null },
 ]
 
 describe('TablaCortes', () => {

@@ -8,6 +8,8 @@ const resumenDeEjemplo: ResumenDiaResponse = {
   etiquetasEscaneadasHoy: 37,
   stockVendibleTotal: '128.400',
   entradasHoy: 2,
+  dineroRecaudadoHoy: '14125',
+  ventasSinPrecioHoy: 0,
 }
 
 describe('ResumenDia', () => {
@@ -18,5 +20,23 @@ describe('ResumenDia', () => {
     expect(screen.getByText('37')).toBeInTheDocument()
     expect(screen.getByText(/128,4 kg/)).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  it('muestra el dinero recaudado hoy', () => {
+    render(<ResumenDia resumen={resumenDeEjemplo} />)
+
+    expect(screen.getByText('$ 14.125')).toBeInTheDocument()
+  })
+
+  it('sin ventas sin precio, no muestra ninguna aclaración', () => {
+    render(<ResumenDia resumen={resumenDeEjemplo} />)
+
+    expect(screen.queryByText(/sin precio registrado/i)).not.toBeInTheDocument()
+  })
+
+  it('con ventas sin precio, muestra cuántas', () => {
+    render(<ResumenDia resumen={{ ...resumenDeEjemplo, ventasSinPrecioHoy: 3 }} />)
+
+    expect(screen.getByText(/3 ventas de hoy sin precio registrado/i)).toBeInTheDocument()
   })
 })

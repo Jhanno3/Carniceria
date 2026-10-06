@@ -243,3 +243,14 @@ No se detectaron contradicciones entre esta spec y la constitución.
 ---
 
 **Siguiente paso:** `fase1/plan.md` por fase (`fase2/plan-fase2.md`, `fase3/plan-fase3.md`, ...), empezando por la Fase 1 (Despostado), verificando contra la sección 9 de este documento antes de generar tareas.
+
+---
+
+## 11. Fase 5 (nota, no FR formales)
+
+La Fase 5 (editar cortes + parte contable: `precio_venta`, `precio_total`, caja diaria,
+"Beneficio por kg vendible") se pidió directo por chat, sin pasar por spec→plan→tasks — sus
+requisitos (FR-501 a FR-505) están documentados en `fase5/tasks-fase5.md`, no acá, para no
+tener que renumerar las secciones 6-10 de este documento. Si en algún momento se quiere esa
+paridad, agregar una sección nueva (no insertarla entre las existentes) — ver la nota al
+final de `fase5/tasks-fase5.md`.

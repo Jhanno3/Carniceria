@@ -5,6 +5,7 @@ export interface FilaReporte {
   cantidadEntradas: number
   rendimientoPromedioPorc: string
   costoKgVendiblePromedio: string | null
+  beneficioPorKgVendible: string | null
 }
 
 interface TablaReporteProps {
@@ -34,6 +35,7 @@ export function TablaReporte({ etiquetaGrupo, etiquetaSinValor, filas }: TablaRe
             <th className="p-3 text-left">Entradas</th>
             <th className="p-3 text-left">Rendimiento</th>
             <th className="p-3 text-left">Costo por kg vendible</th>
+            <th className="p-3 text-left">Beneficio por kg vendible</th>
           </tr>
         </thead>
         <tbody>
@@ -44,6 +46,9 @@ export function TablaReporte({ etiquetaGrupo, etiquetaSinValor, filas }: TablaRe
               <td className="numero p-2 text-texto">{formatearPorcentaje(fila.rendimientoPromedioPorc)}</td>
               <td className="numero p-2 text-texto">
                 {fila.costoKgVendiblePromedio != null ? formatearPesos(Number(fila.costoKgVendiblePromedio)) : '—'}
+              </td>
+              <td className="numero p-2 text-texto">
+                {fila.beneficioPorKgVendible != null ? formatearPesos(Number(fila.beneficioPorKgVendible)) : '—'}
               </td>
             </tr>
           ))}

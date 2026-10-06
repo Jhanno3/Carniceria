@@ -9,6 +9,8 @@ export interface CorteResponse {
   cuarto: 'Delantero' | 'Trasero' | 'Ambos'
   zonaMapa: string | null
   activo: boolean
+  /** $/kg (Fase 5, FR-501) — precio que se le cobra al cliente, nunca un costo. */
+  precioVenta: string | null
 }
 
 // Ver contracts/control-diario-api.md, "GET/PUT /config-etiqueta" (FR-209).

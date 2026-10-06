@@ -27,15 +27,10 @@ public final class DecodificadorEtiqueta {
 		long valorCrudo = Long.parseLong(
 				codigo.substring(config.inicioValor(), config.inicioValor() + config.largoValor()));
 
-		// tipoValor == importe: la etiqueta codifica un importe, no un peso — sin un precio
-		// por kg configurado (no existe ese campo hoy, ver data-model-fase2.md) no hay forma
-		// de recuperar el peso real a partir de esto. Se trata igual que "peso" a falta de
-		// una definición mejor; ninguna carnicería de referencia usa este modo todavía.
-		BigDecimal kg = BigDecimal.valueOf(valorCrudo).movePointLeft(config.decimales());
-
-		if (kg.signum() <= 0) {
-			return new ResultadoDecodificacion.PesoCero();
-		}
-		return new ResultadoDecodificacion.Exito(plu, kg);
+		// El valor crudo, con la coma ya corrida según `decimales` — sin interpretar
+		// todavía si es peso o importe (Fase 5, FR-502: eso lo decide CalculadorVenta, una
+		// vez que el Service sabe el precioVenta del corte decodificado por `plu`).
+		BigDecimal valor = BigDecimal.valueOf(valorCrudo).movePointLeft(config.decimales());
+		return new ResultadoDecodificacion.Exito(plu, valor);
 	}
 }

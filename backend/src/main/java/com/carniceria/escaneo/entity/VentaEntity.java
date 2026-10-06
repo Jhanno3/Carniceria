@@ -27,6 +27,10 @@ public class VentaEntity {
 	@Column(nullable = false)
 	private BigDecimal kg;
 
+	/** $ (Fase 5, FR-502/FR-503) — null si el corte no tenía precio_venta al venderse. */
+	@Column(name = "precio_total")
+	private BigDecimal precioTotal;
+
 	@Column(name = "codigo_leido", nullable = false)
 	private String codigoLeido;
 
@@ -47,10 +51,11 @@ public class VentaEntity {
 	protected VentaEntity() {
 	}
 
-	public VentaEntity(UUID corteId, BigDecimal kg, String codigoLeido, UUID idClienteLocal, UUID usuarioId,
-			UUID duenoId, Instant fechaHora) {
+	public VentaEntity(UUID corteId, BigDecimal kg, BigDecimal precioTotal, String codigoLeido, UUID idClienteLocal,
+			UUID usuarioId, UUID duenoId, Instant fechaHora) {
 		this.corteId = corteId;
 		this.kg = kg;
+		this.precioTotal = precioTotal;
 		this.codigoLeido = codigoLeido;
 		this.idClienteLocal = idClienteLocal;
 		this.usuarioId = usuarioId;
@@ -72,6 +77,10 @@ public class VentaEntity {
 
 	public BigDecimal getKg() {
 		return kg;
+	}
+
+	public BigDecimal getPrecioTotal() {
+		return precioTotal;
 	}
 
 	public String getCodigoLeido() {

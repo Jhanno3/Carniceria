@@ -35,7 +35,7 @@ public class VentaTestFixtures {
 	public UUID crearVentaDirecta(
 			UUID corteId, UUID usuarioId, UUID duenoId, String codigoLeido, Instant fechaHora) {
 		VentaEntity venta = new VentaEntity(
-				corteId, new BigDecimal("1.250"), codigoLeido, UUID.randomUUID(), usuarioId, duenoId, fechaHora);
+				corteId, new BigDecimal("1.250"), null, codigoLeido, UUID.randomUUID(), usuarioId, duenoId, fechaHora);
 		venta = ventaRepository.save(venta);
 		ventaRepository.flush();
 		return venta.getId();

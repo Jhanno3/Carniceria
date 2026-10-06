@@ -6,6 +6,7 @@ export interface ReporteProveedorItem {
   cantidadEntradas: number
   rendimientoPromedioPorc: string
   costoKgVendiblePromedio: string | null
+  beneficioPorKgVendible: string | null
 }
 
 export interface ReporteCategoriaItem {
@@ -13,6 +14,7 @@ export interface ReporteCategoriaItem {
   cantidadEntradas: number
   rendimientoPromedioPorc: string
   costoKgVendiblePromedio: string | null
+  beneficioPorKgVendible: string | null
 }
 
 export type Periodo = 'dia' | 'semana' | 'mes'
@@ -22,4 +24,5 @@ export interface ReportePeriodoItem {
   cantidadEntradas: number
   rendimientoPromedioPorc: string
   costoKgVendiblePromedio: string | null
+  beneficioPorKgVendible: string | null
 }

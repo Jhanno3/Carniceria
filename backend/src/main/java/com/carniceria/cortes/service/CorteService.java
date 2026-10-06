@@ -5,7 +5,9 @@ import com.carniceria.cortes.dto.CorteResponse;
 import com.carniceria.cortes.entity.CorteEntity;
 import com.carniceria.cortes.entity.CorteEntity.Cuarto;
 import com.carniceria.cortes.repository.CorteRepository;
+import com.carniceria.shared.BigDecimals;
 import com.carniceria.shared.error.AccesoDenegadoException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -37,7 +39,9 @@ public class CorteService {
 			throw new PluDuplicadoException(request.plu());
 		});
 
-		CorteEntity corte = new CorteEntity(request.nombre(), request.plu(), cuarto, request.zonaMapa(), true, duenoId);
+		BigDecimal precioVenta = BigDecimals.parse(request.precioVenta());
+		CorteEntity corte = new CorteEntity(
+				request.nombre(), request.plu(), cuarto, request.zonaMapa(), true, precioVenta, duenoId);
 		corteRepository.save(corte);
 		// Flush explícito: el id se genera en memoria (GenerationType.UUID), así que
 		// Hibernate puede diferir el INSERT real hasta el próximo flush — sin esto, un
@@ -51,6 +55,7 @@ public class CorteService {
 	public CorteResponse actualizar(UUID id, CorteRequest request) {
 		Cuarto cuarto = parsearCuarto(request.cuarto());
 		boolean activo = request.activo() == null || request.activo();
+		BigDecimal precioVenta = BigDecimals.parse(request.precioVenta());
 
 		corteRepository.findByPlu(request.plu())
 				.filter(otro -> !otro.getId().equals(id))
@@ -62,7 +67,7 @@ public class CorteService {
 		// LEER un corte activo recibiría un 200 "éxito" sin que RLS haya cambiado nada
 		// de verdad en la base — ver el comentario en CorteRepository.actualizar(...).
 		int filasActualizadas = corteRepository.actualizar(
-				id, request.nombre(), request.plu(), cuarto, request.zonaMapa(), activo);
+				id, request.nombre(), request.plu(), cuarto, request.zonaMapa(), activo, precioVenta);
 		if (filasActualizadas == 0) {
 			if (!corteRepository.existsById(id)) {
 				throw new CorteNoEncontradoException(id);

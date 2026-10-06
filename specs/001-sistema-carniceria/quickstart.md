@@ -193,3 +193,58 @@ el guardia de auto-modificación del paso 39), `TablaReporte.test.tsx`/`Usuarios
 (qué se muestra y qué botón aparece en cada caso). Lo que el test automatizado no puede
 probar es la experiencia real de punta a punta con dos sesiones de navegador distintas
 (pasos 36-37) — por eso siguen siendo pasos manuales.
+
+---
+
+# Quickstart — Fase 5: Editar cortes + parte contable
+
+Continúa la numeración de Fase 4. Reproduce `fase5/tasks-fase5.md` (FR-501 a FR-505).
+Requiere haber hecho antes los pasos 1 a 39 (al menos el corte "Vacío" ya sembrado y, si se
+quiere ver "Beneficio por kg vendible" con un valor real en vez de "—", conviene usar el
+mismo despostado de 100 kg / 81 kg vendibles del paso 2).
+
+## Verificación
+
+40. Como `dueno`, ir a **Editar cortes** y editar "Vacío": cargar precio de venta `6500`.
+    - **Esperado:** se guarda; la tabla muestra "$ 6.500" en la columna de precio de venta.
+    El empleado, si entra a esta misma pantalla por URL directa, puede ver ese precio (no es
+    un costo) pero no tiene el link en la navegación ni puede guardar cambios.
+41. Ir a **Control diario** y escanear el código `2000012012501` (PLU 12 = Vacío, 1,250 kg).
+    - **Esperado:** la venta se registra igual que antes; la tarjeta "Recaudado hoy" sube en
+      `$ 8.125` (1,250 kg × $6.500).
+42. Editar otro corte (ej. "Asado") y dejarlo **sin** precio de venta cargado (o usar uno que
+    ya no lo tenga). Escanear una venta de ese corte.
+    - **Esperado:** la venta se registra igual (no se bloquea el mostrador, Principio IV); no
+      suma a "Recaudado hoy", y aparece la aclaración "N ventas de hoy sin precio
+      registrado".
+43. Ir a **Ajustes** y cambiar `tipoValor` a `importe`. Escanear un código cuyo corte **no**
+    tenga precio de venta cargado.
+    - **Esperado:** `400 CORTE_SIN_PRECIO_VENTA` (distinto de "peso cero"); no se registra
+      ninguna venta. Volver `tipoValor` a `peso` para seguir probando el resto del quickstart.
+44. Ir a **Inicio** y revisar la tarjeta "Recaudado este mes".
+    - **Esperado:** suma el total de los escaneos con precio de los pasos 41 (y cualquier
+      otro del mes); si hubo ventas sin precio, aparece la misma aclaración que en Control
+      diario, pero en términos del mes.
+45. Ir a **Reportes** y abrir las 3 secciones (por proveedor, por categoría, por período).
+    - **Esperado:** las 3 tablas tienen la columna "Beneficio por kg vendible". Para el grupo
+      que incluye la media res de 100 kg/81 kg vendibles del paso 2 (con "Vacío" a $6.500 el
+      kg, el resto de los cortes de esa media res sin precio cargado): el valor se acerca al
+      ejemplo canónico (`$9.000 − $6.420 = $2.580`, ponderado solo por los kilos de los
+      cortes con precio). Un grupo sin ningún corte con precio cargado muestra "—".
+46. Cambiar el precio de venta de "Vacío" (paso 40) a otro valor y revisar una venta **ya
+    registrada** de ese corte (ej. la del paso 41) en "Ventas de hoy" o en el listado.
+    - **Esperado:** esa venta vieja conserva el `precioTotal` que tenía al momento de
+      venderse — no se recalcula retroactivamente (Principio I, no se reescribe historial).
+
+## Correspondencia con tests automatizados
+
+Los pasos 40-46 ya están cubiertos por tests automatizados: `CorteControllerTest` (precio de
+venta editable y visible para el empleado, paso 40), `CalculadorVentaTest` (el cálculo puro
+peso↔importe detrás de los pasos 41-43), `VentaControllerTest` (persistencia de
+`precioTotal`, venta sin precio que igual se registra, y el `400 CORTE_SIN_PRECIO_VENTA` del
+paso 43), `ResumenDiaControllerTest` (paso 41/42), `DespostadoRepositoryTest`/
+`AgregadorRendimientoTest` (el ejemplo canónico del paso 45), `ResumenDia.test.tsx`/
+`TablaReporte.test.tsx` (qué se muestra en cada tarjeta/columna). El paso 46 (que una venta
+vieja no se recalcule) es más una garantía de diseño —`VentaEntity.precioTotal` nunca se
+reescribe después de creada— que algo que un test de integración verifique directamente
+tocando el reloj; queda como paso manual.

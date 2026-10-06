@@ -37,6 +37,7 @@ export function ReportesPage() {
     cantidadEntradas: item.cantidadEntradas,
     rendimientoPromedioPorc: item.rendimientoPromedioPorc,
     costoKgVendiblePromedio: item.costoKgVendiblePromedio,
+    beneficioPorKgVendible: item.beneficioPorKgVendible,
   }))
 
   const filasCategoria: FilaReporte[] = (porCategoria.data ?? []).map((item) => ({
@@ -44,6 +45,7 @@ export function ReportesPage() {
     cantidadEntradas: item.cantidadEntradas,
     rendimientoPromedioPorc: item.rendimientoPromedioPorc,
     costoKgVendiblePromedio: item.costoKgVendiblePromedio,
+    beneficioPorKgVendible: item.beneficioPorKgVendible,
   }))
 
   const filasPeriodo: FilaReporte[] = (porPeriodo.data ?? []).map((item) => ({
@@ -51,6 +53,7 @@ export function ReportesPage() {
     cantidadEntradas: item.cantidadEntradas,
     rendimientoPromedioPorc: item.rendimientoPromedioPorc,
     costoKgVendiblePromedio: item.costoKgVendiblePromedio,
+    beneficioPorKgVendible: item.beneficioPorKgVendible,
   }))
 
   return (

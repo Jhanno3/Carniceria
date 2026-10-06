@@ -89,55 +89,68 @@ paralelo donde no dependen entre sí:
 
 ## Bloque 1 — Backend: `cortes.precio_venta`
 
-- [ ] **T187 [P]** `CorteControllerTest`, casos nuevos: `PUT /cortes/{id}` con
+- [x] **T187 [P]** `CorteControllerTest`, casos nuevos: `PUT /cortes/{id}` con
   `precioVenta: "9000.00"` lo persiste y lo devuelve en la respuesta; con `precioVenta: null`
   lo deja sin precio; con `precioVenta: "-100"` devuelve `400` (validación, no llega a la
   base); un `empleado` autenticado contra `GET /cortes` recibe `precioVenta` en cada fila
   (no queda oculto como si fuera un costo).
-- [ ] **T188** `V23__cortes_precio_venta.sql` — `alter table cortes add column precio_venta
+- [x] **T188** `V23__cortes_precio_venta.sql` — `alter table cortes add column precio_venta
   numeric(12,2) null`, `check (precio_venta is null or precio_venta > 0)`.
-- [ ] **T189** `CorteEntity` (campo + getter/setter), `CorteRequest`/`CorteResponse`
+- [x] **T189** `CorteEntity` (campo + getter/setter), `CorteRequest`/`CorteResponse`
   (agregan `precioVenta`, validado con `@Positive` — Bean Validation ya permite null y solo
   valida cuando está presente, sin exception nueva), `CorteRepository.actualizar(...)` (el
   `@Query` de `UPDATE` explícito suma `c.precioVenta = :precioVenta`), `CorteService.crear`/
   `actualizar` pasan el valor nuevo. `CorteService.crear` nace siempre con `precioVenta =
   request.precioVenta()` (no hay restricción especial al crear, a diferencia de `activo`).
+  **Nota de implementación:** se usó `@DecimalMin(value = "0", inclusive = false)` sobre un
+  campo `String` en vez de `@Positive` sobre `BigDecimal` — el resto del código (`precioKg`
+  en `medias_reses`) hace viajar la plata como `String` por la API (`BigDecimals.parse`/
+  `aTexto`, ver `shared/BigDecimals.java`) para no depender de cómo Jackson serialice
+  números; `DecimalMin`/`DecimalMax` sí soportan `CharSequence` y dan el mismo 400
+  automático (`MethodArgumentNotValidException` → `DATOS_INVALIDOS`) sin exception nueva.
 
 ---
 
 ## Bloque 2 — Frontend: pantalla "Editar cortes" (cierra el gap de FR-109, incluye FR-501)
 
-- [ ] **T190 [P]** `features/cortes/api/types.ts` — `Corte` (refleja `CorteResponse` ya
+- [x] **T190 [P]** `features/cortes/api/types.ts` — `Corte` (refleja `CorteResponse` ya
   extendido: `id, nombre, plu, cuarto, zonaMapa, activo, precioVenta`), `CorteRequest` para
   el body de `POST`/`PUT`.
-- [ ] **T191 [P]** `features/cortes/api/useCortes.ts` (`GET /cortes?incluirInactivos=true` —
+- [x] **T191 [P]** `features/cortes/api/useCortes.ts` (`GET /cortes?incluirInactivos=true` —
   esta pantalla necesita ver los inactivos para poder reactivarlos), `useCrearCorte.ts`,
   `useActualizarCorte.ts` (invalidan la query de `useCortes` al éxito, mismo patrón que
   `useActualizarPerfil`).
-- [ ] **T192 [P]** `components/FormularioCorte.test.tsx`: un formulario (alta o edición,
+- [x] **T192 [P]** `components/FormularioCorte.test.tsx`: un formulario (alta o edición,
   mismo componente) con campos nombre/PLU/cuarto/zona de mapa/precio de venta/activo;
   valida que PLU y nombre no queden vacíos; al confirmar llama `onGuardar` con los valores
   tal cual los tipeó (sin tocar formato es-AR → BigDecimal-string, eso lo hace el hook de
   arriba, mismo criterio que `FormularioConfigEtiqueta`).
-- [ ] **T193 [P]** `components/TablaDeCortes.test.tsx`: lista todos los cortes (activos e
+- [x] **T193 [P]** `components/TablaDeCortes.test.tsx`: lista todos los cortes (activos e
   inactivos, estos últimos visualmente atenuados) con nombre/PLU/cuarto/zona/precio de
   venta/estado; cada fila tiene un botón "Editar" (abre el formulario con esos valores
   precargados) y un botón "Desactivar"/"Activar" según `activo`; sin cortes, mensaje
   neutro.
-- [ ] **T194** `components/FormularioCorte.tsx`, `components/TablaDeCortes.tsx`.
-- [ ] **T195** `CortesPage.tsx` — tabla + botón "Nuevo corte" que abre el formulario vacío;
+- [x] **T194** `components/FormularioCorte.tsx`, `components/TablaDeCortes.tsx`.
+- [x] **T195** `CortesPage.tsx` — tabla + botón "Nuevo corte" que abre el formulario vacío;
   reusa `useCortes`/`useCrearCorte`/`useActualizarCorte`. Sin test propio (página de
   ensamblado, mismo criterio que `DespostadoPage`/`AjustesPage`).
-- [ ] **T196** `App.tsx` — nueva sección `'cortes'` ("Editar cortes"), visible junto a
+- [x] **T196** `App.tsx` — nueva sección `'cortes'` ("Editar cortes"), visible junto a
   `'ajustes'`/`'reportes'` para quien opera su propio negocio (`operaNegocio`); el empleado
   no la ve en la navegación pero si llamara al endpoint de todos modos solo podría leer
   (RLS ya lo impide escribir, T187).
+  **Nota de implementación:** `shared/api/types.ts` (`CorteResponse`, usado también por
+  `despostado`/`control-diario`) se extendió con `precioVenta` — se actualizó el único mock
+  de test existente que construía el literal completo
+  (`despostado/components/TablaCortes.test.tsx`). La conversión es-AR → BigDecimal-string
+  de `precioVenta` (y PLU texto → number) vive en `features/cortes/api/aCorteRequest.ts`,
+  usado por ambos hooks (`useCrearCorte`/`useActualizarCorte`) — no estaba listado como
+  archivo propio en la tarea pero evita duplicar la conversión en los dos hooks.
 
 ---
 
 ## Bloque 3 — Backend: modelo puro — deriva kg/importe según `tipoValor` [P] (en paralelo con Bloques 1-2)
 
-- [ ] **T197 [P]** `CalculadorVentaTest.java` (sin Spring):
+- [x] **T197 [P]** `CalculadorVentaTest.java` (sin Spring):
   - `tipoValor=peso`, `valor=1.250`, `precioVentaCorte=6500` → `Exito(kg=1.250,
     importe=8125)`.
   - `tipoValor=peso`, `valor=1.250`, `precioVentaCorte=null` → `Exito(kg=1.250,
@@ -149,13 +162,13 @@ paralelo donde no dependen entre sí:
     precio no hay forma de recuperar los kilos).
   - `valor=0` en cualquiera de los dos modos → `PesoCero` (en modo importe, antes de
     intentar ninguna división).
-- [ ] **T198** `escaneo/modelo/CalculadorVenta.java` — `sealed interface ResultadoVenta`
+- [x] **T198** `escaneo/modelo/CalculadorVenta.java` — `sealed interface ResultadoVenta`
   (`Exito(BigDecimal kg, BigDecimal importe)`, `PesoCero()`, `FaltaPrecioVenta()`);
   `calcular(BigDecimal valor, ConfigEtiqueta.TipoValor tipoValor, BigDecimal
   precioVentaCorte): ResultadoVenta`. Mismo redondeo que el resto del dominio: kg a 3
   decimales, importe a 0 decimales (pesos sin centavos, igual que
   `AgregadorRendimiento`), `RoundingMode.HALF_UP`.
-- [ ] **T199** `DecodificadorEtiqueta.decodificar(...)` deja de devolver `kg` y de hacer el
+- [x] **T199** `DecodificadorEtiqueta.decodificar(...)` deja de devolver `kg` y de hacer el
   chequeo de `PesoCero` — pasa a devolver `Exito(int plu, BigDecimal valor)` (el valor
   crudo, sin interpretar todavía si es peso o importe: eso ahora lo decide `CalculadorVenta`
   una vez que el Service sabe qué corte es). Se borra el caso `PesoCero` de
@@ -166,7 +179,7 @@ paralelo donde no dependen entre sí:
 
 ## Bloque 4 — Backend: la venta persiste `precio_total` (usa Bloques 1 y 3)
 
-- [ ] **T200 [P]** `VentaControllerTest`, casos nuevos:
+- [x] **T200 [P]** `VentaControllerTest`, casos nuevos:
   - Corte con `precioVenta=6500`, `config_etiqueta.tipoValor=peso`, código que decodifica
     `kg=1.250` → la venta creada tiene `precioTotal="8125"`.
   - Corte sin `precioVenta`, mismo escenario → `precioTotal=null`, la venta se crea igual
@@ -175,27 +188,31 @@ paralelo donde no dependen entre sí:
     CORTE_SIN_PRECIO_VENTA`, no se crea ninguna venta.
   - `idClienteLocal` repetido sigue devolviendo la misma venta ya creada (caso existente,
     confirmar que sigue pasando con el flujo nuevo).
-- [ ] **T201** `V24__ventas_precio_total.sql` — `alter table ventas add column precio_total
+- [x] **T201** `V24__ventas_precio_total.sql` — `alter table ventas add column precio_total
   numeric(12,2) null` (sin `check`: puede ser null a propósito, a diferencia de
   `cortes.precio_venta`).
-- [ ] **T202** `VentaEntity` (campo + getter), `VentaResponse` (agrega `precioTotal`,
+- [x] **T202** `VentaEntity` (campo + getter), `VentaResponse` (agrega `precioTotal`,
   nullable), `escaneo/service/CorteSinPrecioVentaException.java` (`400`, mismo patrón que
   `PesoCeroException`).
-- [ ] **T203** `VentaService.escanear`: después de encontrar el `CorteEntity` por PLU (ya
+- [x] **T203** `VentaService.escanear`: después de encontrar el `CorteEntity` por PLU (ya
   estaba, antes de construir la `VentaEntity`), llama a `CalculadorVenta.calcular(...)` con
   el `valor` crudo del decodificador, `config.tipoValor()` y `corte.getPrecioVenta()`;
   traduce `PesoCero`/`FaltaPrecioVenta` a excepción (mismo `switch` exhaustivo que ya existe
   para `ResultadoDecodificacion`); guarda `kg` e `importe` en la `VentaEntity` nueva.
+  **Nota:** para fijar `precioVenta`/`tipoValor` en los tests se usan los endpoints reales
+  (`PUT /cortes/{id}`, `PUT /config-etiqueta`) vía MockMvc, no el repositorio directo — un
+  `@Modifying @Query` llamado directo desde el cuerpo del test no dispara `RlsSessionAspect`
+  de forma confiable (mismo motivo documentado en `VentaTestFixtures`).
 
 ---
 
 ## Bloque 5 — Backend: resumen diario — dinero recaudado hoy (usa Bloque 4)
 
-- [ ] **T204 [P]** `ResumenDiaServiceTest` (o controller, según dónde ya estén los tests de
+- [x] **T204 [P]** `ResumenDiaServiceTest` (o controller, según dónde ya estén los tests de
   Fase 2/3), caso nuevo: 3 ventas de hoy no anuladas con `precioTotal` 8125/6000/null, una
   anulada con `precioTotal=5000` → `dineroRecaudadoHoy="14125"` (excluye la anulada y la
   null), `ventasSinPrecioHoy=1`.
-- [ ] **T205** `ResumenDiaResponse` agrega `dineroRecaudadoHoy: String`,
+- [x] **T205** `ResumenDiaResponse` agrega `dineroRecaudadoHoy: String`,
   `ventasSinPrecioHoy: int`. `ResumenDiaService.calcular` los suma a partir de
   `ventasDelDia` que ya tenía cargada (sin ninguna consulta nueva a la base).
 
@@ -203,20 +220,20 @@ paralelo donde no dependen entre sí:
 
 ## Bloque 6 — Backend: reportes — "Beneficio por kg vendible" (usa Bloque 1, independiente de los Bloques 3-5)
 
-- [ ] **T206 [P]** `DespostadoRepositoryTest`, caso nuevo (mismo ejemplo canónico de la
+- [x] **T206 [P]** `DespostadoRepositoryTest`, caso nuevo (mismo ejemplo canónico de la
   especificación: media res de 100 kg, 81 kg vendibles): de esos 81 kg, 60 kg son de un
   corte con `precioVenta=9000` y 21 kg son de otro corte sin `precioVenta` →
   `sumarKgYValorVentaPorMediaRes` devuelve, para esa media res, `kgConPrecioVenta=60`,
   `importeConPrecioVenta=540000` (60 × 9000) — los 21 kg sin precio no entran a ninguno de
   los dos.
-- [ ] **T207** `despostado/modelo/IngresoCortesPorMediaRes.java` (record: `mediaResId,
+- [x] **T207** `despostado/modelo/IngresoCortesPorMediaRes.java` (record: `mediaResId,
   kgConPrecioVenta, importeConPrecioVenta`) + `DespostadoRepository
   .sumarKgYValorVentaPorMediaRes(Collection<UUID> mediaResIds)`: join explícito por
   igualdad (`from DespostadoEntity d, CorteEntity c where c.id = d.corteId and
   c.precioVenta is not null and d.mediaResId in :mediaResIds group by d.mediaResId`, mismo
   estilo sin `@ManyToOne` que `buscarHistoricoPorUsuario`), seleccionando `sum(d.kg)` y
   `sum(d.kg * c.precioVenta)`.
-- [ ] **T208 [P]** `AgregadorRendimientoTest`, caso nuevo, mismo ejemplo canónico
+- [x] **T208 [P]** `AgregadorRendimientoTest`, caso nuevo, mismo ejemplo canónico
   encadenado con T206: `Entrada(pesoKg=100, precioKg=5200, vendibleKg=81,
   kgConPrecioVenta=60, importeConPrecioVenta=540000)` → `costoKgVendiblePromedio=6420`
   (ya lo calculaba así, sin cambios), `precioVentaPromedioPonderado=9000` (540000/60),
@@ -225,12 +242,12 @@ paralelo donde no dependen entre sí:
   `precioVentaPromedioPonderado` (sigue dando 9000, prueba que no se la trata como kilos a
   precio 0). Un tercer caso: ningún corte del grupo tiene precio →
   `precioVentaPromedioPonderado=null` y por lo tanto `beneficioPorKgVendiblePromedio=null`.
-- [ ] **T209** `AgregadorRendimiento.Entrada` agrega `kgConPrecioVenta`/
+- [x] **T209** `AgregadorRendimiento.Entrada` agrega `kgConPrecioVenta`/
   `importeConPrecioVenta` (ambos `BigDecimal`, se tratan como `0` si vienen `null` al
   sumar — a diferencia de `precioKg`, que si es `null` excluye toda la entrada);
   `Resultado` agrega `precioVentaPromedioPonderado`/`beneficioPorKgVendiblePromedio`, mismo
   redondeo (`ESCALA_PESOS`, `HALF_UP`) que `costoKgVendiblePromedio`.
-- [ ] **T210** `ReporteProveedorItem`/`ReporteCategoriaItem`/`ReportePeriodoItem` agregan
+- [x] **T210** `ReporteProveedorItem`/`ReporteCategoriaItem`/`ReportePeriodoItem` agregan
   `beneficioPorKgVendible: String`. `ReporteService` carga
   `sumarKgYValorVentaPorMediaRes` una sola vez por llamada (igual patrón que
   `cargarVendibleKgPorMediaRes`, mapeado por `mediaResId`) y lo mezcla en las `Entrada` de
@@ -240,30 +257,36 @@ paralelo donde no dependen entre sí:
 
 ## Bloque 7 — Frontend: caja diaria y resumen del mes (usa Bloques 4 y 5)
 
-- [ ] **T211 [P]** `features/control-diario/components/ResumenDelDia.test.tsx` (o el
+- [x] **T211 [P]** `features/control-diario/components/ResumenDelDia.test.tsx` (o el
   componente que ya muestre el resumen — extender sus tests existentes): agrega "Recaudado
   hoy" (formateado con `formatearPesos`) y, si `ventasSinPrecioHoy > 0`, una aclaración
   visible ("N ventas de hoy sin precio registrado").
-- [ ] **T212** `features/control-diario/api/types.ts` (agrega los 2 campos nuevos de
+- [x] **T212** `features/control-diario/api/types.ts` (agrega los 2 campos nuevos de
   `ResumenDiaResponse`) + el componente de arriba.
-- [ ] **T213 [P]** `features/despostado/api/types.ts` (o donde viva `VentaResponse` en el
+- [x] **T213 [P]** `features/despostado/api/types.ts` (o donde viva `VentaResponse` en el
   frontend) agrega `precioTotal: string | null`.
-- [ ] **T214** `features/inicio/modelo/resumenMes.ts` — agrega `dineroRecaudadoMes` y
+- [x] **T214** `features/inicio/modelo/resumenMes.ts` — agrega `dineroRecaudadoMes` y
   `ventasSinPrecioMes`, calculados sobre `GET /ventas?desde&hasta` del mes (mismo patrón ya
   usado ahí para medias reses: trae la lista completa del rango y suma en el cliente, sin
   endpoint nuevo — un mes de ventas de una sola carnicería no justifica una agregación en
   el backend). Actualizar `resumenMes.test.ts`.
-- [ ] **T215** `InicioPage.tsx` — nueva tarjeta "Recaudado este mes"; si
+- [x] **T215** `InicioPage.tsx` — nueva tarjeta "Recaudado este mes"; si
   `ventasSinPrecioMes > 0`, mismo tipo de aclaración que T211.
+  **Nota:** el componente/archivo real se llama `ResumenDia.tsx`/`ResumenDia.test.tsx` (no
+  `ResumenDelDia`); `VentaResponse` vive en `control-diario/api/types.ts`, no en
+  `despostado/api/types.ts` (no existía ahí). `calcularResumenMes` pasó a tomar también
+  `ventas: VentaResponse[]` como segundo parámetro (cross-feature import de
+  `control-diario/api/useVentas`, mismo criterio que `InicioPage` ya usa con `usePerfilPropio`
+  de `perfiles`).
 
 ---
 
 ## Bloque 8 — Frontend: reportes — columna "Beneficio por kg vendible" (usa Bloque 6)
 
-- [ ] **T216 [P]** `features/reportes/components/TablaReporte.test.tsx`, caso nuevo: una
+- [x] **T216 [P]** `features/reportes/components/TablaReporte.test.tsx`, caso nuevo: una
   fila con `beneficioPorKgVendible` numérico lo muestra formateado con `formatearPesos`;
   con `null` muestra "—" (mismo criterio que `costoKgVendiblePromedio` ya tiene).
-- [ ] **T217** `features/reportes/api/types.ts` (agrega el campo a los 3 tipos de item) +
+- [x] **T217** `features/reportes/api/types.ts` (agrega el campo a los 3 tipos de item) +
   `components/TablaReporte.tsx` (nueva columna, mismo orden en las 3 tablas ya que
   reusan el componente).
 
@@ -271,7 +294,7 @@ paralelo donde no dependen entre sí:
 
 ## Bloque 9 — Cierre de fase
 
-- [ ] **T218** Agregar a `../quickstart.md` los pasos de Fase 5: cargar un precio de venta
+- [x] **T218** Agregar a `../quickstart.md` los pasos de Fase 5: cargar un precio de venta
   desde "Editar cortes"; escanear una venta de ese corte y confirmar "Recaudado hoy" en
   Control diario; escanear una venta de un corte **sin** precio y confirmar que igual se
   registra (aparece en "ventas sin precio"); revisar "Recaudado este mes" en Inicio; abrir
@@ -279,10 +302,14 @@ paralelo donde no dependen entre sí:
 - [ ] **T219** Ejecutar `../quickstart.md` completo (Fases 1-5) de punta a punta; corregir
   cualquier desvío. Pendiente: requiere clickear la UI real con el back y el front
   levantados — no lo puede hacer esta sesión por sí sola.
-- [ ] **T220** Revisión final: confirmar que ningún corte existente quedó con `precio_total`
+- [x] **T220** Revisión final: confirmar que ningún corte existente quedó con `precio_total`
   de ventas viejas recalculado retroactivamente (deben seguir en `null`, Bloque 4 no hace
   ningún backfill) y que `spec.md` recibió, aunque sea como nota, la referencia a esta
   fase (ver nota abajo) para que la próxima sesión no la pierda de vista.
+  **Verificado:** `V24__ventas_precio_total.sql` solo agrega la columna (sin `update`, sin
+  backfill) — toda venta anterior a esta fase queda con `precio_total = null` para
+  siempre, que es el comportamiento correcto (Principio I). `spec.md` recibió una sección
+  11 nueva al final con el mismo puntero a `fase5/tasks-fase5.md` que ya tenía esta nota.
 
 ---
 

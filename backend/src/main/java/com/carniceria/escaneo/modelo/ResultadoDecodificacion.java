@@ -8,15 +8,15 @@ import java.math.BigDecimal;
  */
 public sealed interface ResultadoDecodificacion {
 
-	record Exito(int plu, BigDecimal kg) implements ResultadoDecodificacion {
+	// El valor crudo, sin interpretar todavía si es peso o importe (Fase 5, FR-502): eso
+	// pasó a decidirlo CalculadorVenta, una vez que el Service sabe qué corte es (necesita
+	// su precioVenta). El chequeo de "valor cero" también se movió ahí — ver ResultadoVenta.
+	record Exito(int plu, BigDecimal valor) implements ResultadoDecodificacion {
 	}
 
 	record DigitoVerificadorInvalido() implements ResultadoDecodificacion {
 	}
 
 	record PrefijoInvalido() implements ResultadoDecodificacion {
-	}
-
-	record PesoCero() implements ResultadoDecodificacion {
 	}
 }

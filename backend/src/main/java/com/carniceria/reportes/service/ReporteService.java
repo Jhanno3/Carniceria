@@ -1,6 +1,7 @@
 package com.carniceria.reportes.service;
 
 import com.carniceria.despostado.entity.MediaResEntity;
+import com.carniceria.despostado.modelo.IngresoCortesPorMediaRes;
 import com.carniceria.despostado.modelo.VendibleKgPorMediaRes;
 import com.carniceria.despostado.repository.DespostadoRepository;
 import com.carniceria.despostado.repository.MediaResRepository;
@@ -45,6 +46,7 @@ public class ReporteService {
 	public List<ReporteProveedorItem> porProveedor(LocalDate desde, LocalDate hasta) {
 		List<MediaResEntity> medias = mediaResRepository.findByFechaBetween(desde, hasta);
 		Map<UUID, BigDecimal> vendibleKgPorId = cargarVendibleKgPorMediaRes(medias);
+		Map<UUID, IngresoCortesPorMediaRes> ingresoPorId = cargarIngresoCortesPorMediaRes(medias);
 
 		// Collectors.groupingBy rechaza con NPE una clave null (plan-fase4.md, 3.3 pide
 		// agrupar las entradas sin proveedor aparte, no excluirlas) — se envuelve en
@@ -55,10 +57,11 @@ public class ReporteService {
 
 		return porProveedor.entrySet().stream()
 				.map(grupo -> {
-					Resultado resultado = agregar(grupo.getValue(), vendibleKgPorId);
+					Resultado resultado = agregar(grupo.getValue(), vendibleKgPorId, ingresoPorId);
 					return new ReporteProveedorItem(grupo.getKey().orElse(null), resultado.cantidadEntradas(),
 							BigDecimals.aTexto(resultado.rendimientoPromedioPorc()),
-							BigDecimals.aTexto(resultado.costoKgVendiblePromedio()));
+							BigDecimals.aTexto(resultado.costoKgVendiblePromedio()),
+							BigDecimals.aTexto(resultado.beneficioPorKgVendiblePromedio()));
 				})
 				.sorted(Comparator.comparing(
 						ReporteProveedorItem::proveedor, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -69,6 +72,7 @@ public class ReporteService {
 	public List<ReporteCategoriaItem> porCategoria(LocalDate desde, LocalDate hasta) {
 		List<MediaResEntity> medias = mediaResRepository.findByFechaBetween(desde, hasta);
 		Map<UUID, BigDecimal> vendibleKgPorId = cargarVendibleKgPorMediaRes(medias);
+		Map<UUID, IngresoCortesPorMediaRes> ingresoPorId = cargarIngresoCortesPorMediaRes(medias);
 
 		Map<Optional<String>, List<MediaResEntity>> porCategoria = medias.stream()
 				.collect(Collectors.groupingBy(
@@ -76,10 +80,11 @@ public class ReporteService {
 
 		return porCategoria.entrySet().stream()
 				.map(grupo -> {
-					Resultado resultado = agregar(grupo.getValue(), vendibleKgPorId);
+					Resultado resultado = agregar(grupo.getValue(), vendibleKgPorId, ingresoPorId);
 					return new ReporteCategoriaItem(grupo.getKey().orElse(null), resultado.cantidadEntradas(),
 							BigDecimals.aTexto(resultado.rendimientoPromedioPorc()),
-							BigDecimals.aTexto(resultado.costoKgVendiblePromedio()));
+							BigDecimals.aTexto(resultado.costoKgVendiblePromedio()),
+							BigDecimals.aTexto(resultado.beneficioPorKgVendiblePromedio()));
 				})
 				.sorted(Comparator.comparing(
 						ReporteCategoriaItem::categoria, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -91,25 +96,33 @@ public class ReporteService {
 		Periodo periodo = parsearPeriodo(periodoTexto);
 		List<MediaResEntity> medias = mediaResRepository.findByFechaBetween(desde, hasta);
 		Map<UUID, BigDecimal> vendibleKgPorId = cargarVendibleKgPorMediaRes(medias);
+		Map<UUID, IngresoCortesPorMediaRes> ingresoPorId = cargarIngresoCortesPorMediaRes(medias);
 
 		Map<LocalDate, List<MediaResEntity>> porPeriodo = medias.stream()
 				.collect(Collectors.groupingBy(m -> CalculadorPeriodo.inicioDelBucket(m.getFecha(), periodo)));
 
 		return porPeriodo.entrySet().stream()
 				.map(grupo -> {
-					Resultado resultado = agregar(grupo.getValue(), vendibleKgPorId);
+					Resultado resultado = agregar(grupo.getValue(), vendibleKgPorId, ingresoPorId);
 					return new ReportePeriodoItem(grupo.getKey().toString(), resultado.cantidadEntradas(),
 							BigDecimals.aTexto(resultado.rendimientoPromedioPorc()),
-							BigDecimals.aTexto(resultado.costoKgVendiblePromedio()));
+							BigDecimals.aTexto(resultado.costoKgVendiblePromedio()),
+							BigDecimals.aTexto(resultado.beneficioPorKgVendiblePromedio()));
 				})
 				.sorted(Comparator.comparing(ReportePeriodoItem::periodoInicio))
 				.toList();
 	}
 
-	private Resultado agregar(List<MediaResEntity> medias, Map<UUID, BigDecimal> vendibleKgPorId) {
+	private Resultado agregar(List<MediaResEntity> medias, Map<UUID, BigDecimal> vendibleKgPorId,
+			Map<UUID, IngresoCortesPorMediaRes> ingresoPorId) {
 		List<Entrada> entradas = medias.stream()
-				.map(m -> new Entrada(
-						m.getPesoKg(), m.getPrecioKg(), vendibleKgPorId.getOrDefault(m.getId(), BigDecimal.ZERO)))
+				.map(m -> {
+					IngresoCortesPorMediaRes ingreso = ingresoPorId.get(m.getId());
+					return new Entrada(
+							m.getPesoKg(), m.getPrecioKg(), vendibleKgPorId.getOrDefault(m.getId(), BigDecimal.ZERO),
+							ingreso == null ? null : ingreso.kgConPrecioVenta(),
+							ingreso == null ? null : ingreso.importeConPrecioVenta());
+				})
 				.toList();
 		return AgregadorRendimiento.agregar(entradas);
 	}
@@ -121,6 +134,15 @@ public class ReporteService {
 		List<UUID> ids = medias.stream().map(MediaResEntity::getId).toList();
 		return despostadoRepository.sumarVendibleKgPorMediaRes(ids).stream()
 				.collect(Collectors.toMap(VendibleKgPorMediaRes::mediaResId, VendibleKgPorMediaRes::vendibleKg));
+	}
+
+	private Map<UUID, IngresoCortesPorMediaRes> cargarIngresoCortesPorMediaRes(List<MediaResEntity> medias) {
+		if (medias.isEmpty()) {
+			return Map.of();
+		}
+		List<UUID> ids = medias.stream().map(MediaResEntity::getId).toList();
+		return despostadoRepository.sumarKgYValorVentaPorMediaRes(ids).stream()
+				.collect(Collectors.toMap(IngresoCortesPorMediaRes::mediaResId, ingreso -> ingreso));
 	}
 
 	private Periodo parsearPeriodo(String texto) {

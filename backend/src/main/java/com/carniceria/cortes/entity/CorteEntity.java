@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -38,6 +39,10 @@ public class CorteEntity {
 	@Column(nullable = false)
 	private boolean activo = true;
 
+	/** $/kg, opcional (FR-501) — precio que se le cobra al cliente, no un costo de compra. */
+	@Column(name = "precio_venta")
+	private BigDecimal precioVenta;
+
 	/** El negocio dueño de este corte (V10__multi_negocio.sql) — cada dueño tiene su propio catálogo. */
 	@Column(name = "dueno_id", nullable = false)
 	private UUID duenoId;
@@ -45,12 +50,14 @@ public class CorteEntity {
 	protected CorteEntity() {
 	}
 
-	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, String zonaMapa, boolean activo, UUID duenoId) {
+	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, String zonaMapa, boolean activo,
+			BigDecimal precioVenta, UUID duenoId) {
 		this.nombre = nombre;
 		this.plu = plu;
 		this.cuarto = cuarto;
 		this.zonaMapa = zonaMapa;
 		this.activo = activo;
+		this.precioVenta = precioVenta;
 		this.duenoId = duenoId;
 	}
 
@@ -96,6 +103,14 @@ public class CorteEntity {
 
 	public void setActivo(boolean activo) {
 		this.activo = activo;
+	}
+
+	public BigDecimal getPrecioVenta() {
+		return precioVenta;
+	}
+
+	public void setPrecioVenta(BigDecimal precioVenta) {
+		this.precioVenta = precioVenta;
 	}
 
 	public UUID getDuenoId() {

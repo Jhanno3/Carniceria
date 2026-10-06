@@ -1,6 +1,7 @@
 package com.carniceria.despostado.repository;
 
 import com.carniceria.despostado.entity.DespostadoEntity;
+import com.carniceria.despostado.modelo.IngresoCortesPorMediaRes;
 import com.carniceria.despostado.modelo.RegistroHistorico;
 import com.carniceria.despostado.modelo.VendibleKgPorMediaRes;
 import java.util.Collection;
@@ -36,4 +37,16 @@ public interface DespostadoRepository extends JpaRepository<DespostadoEntity, UU
 			+ "from DespostadoEntity d, MediaResEntity m "
 			+ "where m.id = d.mediaResId and m.creadoPor = :usuarioId")
 	List<RegistroHistorico> buscarHistoricoPorUsuario(UUID usuarioId);
+
+	// Fase 5 (FR-505, "Beneficio por kg vendible"): mismo estilo sin @ManyToOne que
+	// buscarHistoricoPorUsuario — cruce explícito por igualdad, no por relación JPA. Solo
+	// suma los cortes con precioVenta cargado (el `where` los filtra antes del group by):
+	// un corte sin precio no entra ni al numerador ni al denominador del promedio ponderado
+	// que arma AgregadorRendimiento, en vez de contarlo como precio 0.
+	@Query("select new com.carniceria.despostado.modelo.IngresoCortesPorMediaRes("
+			+ "d.mediaResId, sum(d.kg), sum(d.kg * c.precioVenta)) "
+			+ "from DespostadoEntity d, CorteEntity c "
+			+ "where c.id = d.corteId and c.precioVenta is not null and d.mediaResId in :mediaResIds "
+			+ "group by d.mediaResId")
+	List<IngresoCortesPorMediaRes> sumarKgYValorVentaPorMediaRes(@Param("mediaResIds") Collection<UUID> mediaResIds);
 }

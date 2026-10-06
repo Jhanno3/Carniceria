@@ -12,6 +12,8 @@ export interface VentaResponse {
   corteId: string
   corteNombre: string | null
   kg: string
+  /** $ (Fase 5, FR-502/FR-503) — null si el corte no tenía precio de venta al momento de venderse. */
+  precioTotal: string | null
   codigoLeido: string
   anulada: boolean
   usuarioId: string
@@ -41,4 +43,6 @@ export interface ResumenDiaResponse {
   etiquetasEscaneadasHoy: number
   stockVendibleTotal: string
   entradasHoy: number
+  dineroRecaudadoHoy: string
+  ventasSinPrecioHoy: number
 }
