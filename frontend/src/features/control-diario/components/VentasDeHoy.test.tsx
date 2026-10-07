@@ -18,7 +18,7 @@ function venta(
   id: string,
   hora: string,
   corteNombre: string,
-  opciones: Partial<Pick<VentaResponse, 'anulada' | 'usuarioId' | 'fechaHora'>> = {},
+  opciones: Partial<Pick<VentaResponse, 'anulada' | 'usuarioId' | 'fechaHora' | 'kg' | 'precioTotal'>> = {},
 ): VentaResponse {
   return {
     id,
@@ -52,6 +52,13 @@ describe('VentasDeHoy', () => {
   it('sin ventas, muestra un mensaje neutro', () => {
     renderizar([])
     expect(screen.getByText(/todavía no hay ventas/i)).toBeInTheDocument()
+  })
+
+  it('tiene encabezados de columna, en orden: Kg antes que $/kg antes que Total', () => {
+    renderizar([venta('1', '10:00', 'Asado', { kg: '2.300', precioTotal: '14950' })])
+
+    const encabezados = screen.getAllByRole('columnheader').map((el) => el.textContent)
+    expect(encabezados).toEqual(['Hora', 'Corte', 'Kg', '$/kg', 'Total', ''])
   })
 
   it('lista las ventas en el orden recibido (más reciente primero)', () => {
@@ -121,6 +128,21 @@ describe('VentasDeHoy', () => {
 
     expect(screen.getByText(/anulada/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /anular/i })).not.toBeInTheDocument()
+  })
+
+  it('con precioTotal cargado, muestra el precio por kg y el total de la venta', () => {
+    const conPrecio = venta('1', '10:00', 'Asado', { kg: '2.300', precioTotal: '14950' })
+    renderizar([conPrecio])
+
+    expect(screen.getByText('$ 6.500/kg')).toBeInTheDocument()
+    expect(screen.getByText('$ 14.950')).toBeInTheDocument()
+  })
+
+  it('sin precioTotal (corte sin precio de venta cargado), muestra "—" en vez de inventar un precio', () => {
+    const sinPrecio = venta('1', '10:00', 'Espinazo', { kg: '2.500', precioTotal: null })
+    renderizar([sinPrecio])
+
+    expect(screen.getAllByText('—')).toHaveLength(2)
   })
 
   it('click en "Anular" dispara la mutación con el id de la venta', async () => {

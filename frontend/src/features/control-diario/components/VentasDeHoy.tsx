@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatearKg } from '../../../shared/formato/formatoEsAr'
+import { formatearKg, formatearPesos } from '../../../shared/formato/formatoEsAr'
 import { useAnularVenta } from '../api/useAnularVenta'
 import type { VentaResponse } from '../api/types'
 
@@ -16,6 +16,13 @@ interface VentasDeHoyProps {
 
 function hora(fechaHoraIso: string): string {
   return new Date(fechaHoraIso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+}
+
+// Se deriva del precioTotal YA guardado en la venta (no del precioVenta actual del corte):
+// conserva el precio real que se cobró ese día, aunque el corte haya cambiado de precio
+// después (Principio I, misma garantía que ya documenta Fase 5 para precioTotal).
+function precioPorKg(precioTotal: string, kg: string): number {
+  return Math.round(Number(precioTotal) / Number(kg))
 }
 
 // FR-308: un empleado solo puede anular una venta propia de menos de 5 minutos. Se evalúa
@@ -43,33 +50,54 @@ export function VentasDeHoy({ ventas, usuarioActualId, puedeAnularCualquiera }: 
       {ventas.length === 0 ? (
         <p className="text-cuerpo text-texto-secundario">Todavía no hay ventas hoy.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-borde">
-          {visibles.map((venta) => (
-            <li key={venta.id} className="flex items-center justify-between gap-3 py-2 text-cuerpo">
-              <span className="text-texto-secundario">{hora(venta.fechaHora)}</span>
-              <span className={`flex-1 ${venta.anulada ? 'text-texto-secundario line-through' : 'text-texto'}`}>
-                {venta.corteNombre ?? '—'}
-              </span>
-              <span className={`numero ${venta.anulada ? 'text-texto-secundario line-through' : 'text-texto'}`}>
-                {formatearKg(Number(venta.kg))}
-              </span>
-              {venta.anulada ? (
-                <span className="text-etiqueta font-medium uppercase text-texto-secundario">Anulada</span>
-              ) : (
-                puedeAnular(venta, usuarioActualId, puedeAnularCualquiera) && (
-                  <button
-                    type="button"
-                    disabled={anular.isPending}
-                    onClick={() => anular.mutate(venta.id)}
-                    className="h-9 rounded-lg border border-borde-campo px-3 text-etiqueta font-medium text-texto disabled:opacity-60"
-                  >
-                    Anular
-                  </button>
+        <div className="overflow-x-auto">
+          <table className="w-full text-cuerpo">
+            <thead>
+              <tr className="border-b border-borde text-etiqueta uppercase text-texto-secundario">
+                <th className="p-2 text-left">Hora</th>
+                <th className="p-2 text-left">Corte</th>
+                <th className="p-2 text-left">Kg</th>
+                <th className="p-2 text-left">$/kg</th>
+                <th className="p-2 text-left">Total</th>
+                <th className="p-2 text-left"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibles.map((venta) => {
+                const estilo = venta.anulada ? 'text-texto-secundario line-through' : 'text-texto'
+                return (
+                  <tr key={venta.id} className="border-b border-borde last:border-0">
+                    <td className="p-2 text-texto-secundario">{hora(venta.fechaHora)}</td>
+                    <td className={`p-2 ${estilo}`}>{venta.corteNombre ?? '—'}</td>
+                    <td className={`numero p-2 ${estilo}`}>{formatearKg(Number(venta.kg))}</td>
+                    <td className={`numero p-2 ${estilo}`}>
+                      {venta.precioTotal != null ? `${formatearPesos(precioPorKg(venta.precioTotal, venta.kg))}/kg` : '—'}
+                    </td>
+                    <td className={`numero p-2 ${estilo}`}>
+                      {venta.precioTotal != null ? formatearPesos(Number(venta.precioTotal)) : '—'}
+                    </td>
+                    <td className="p-2 text-right">
+                      {venta.anulada ? (
+                        <span className="text-etiqueta font-medium uppercase text-texto-secundario">Anulada</span>
+                      ) : (
+                        puedeAnular(venta, usuarioActualId, puedeAnularCualquiera) && (
+                          <button
+                            type="button"
+                            disabled={anular.isPending}
+                            onClick={() => anular.mutate(venta.id)}
+                            className="h-9 rounded-lg border border-borde-campo px-3 text-etiqueta font-medium text-texto disabled:opacity-60"
+                          >
+                            Anular
+                          </button>
+                        )
+                      )}
+                    </td>
+                  </tr>
                 )
-              )}
-            </li>
-          ))}
-        </ul>
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {!mostrarTodas && ventas.length > CANTIDAD_INICIAL && (
