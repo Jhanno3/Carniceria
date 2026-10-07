@@ -19,6 +19,13 @@ public class CorteEntity {
 		Delantero, Trasero, Ambos
 	}
 
+	/** Vacuno (default) = sale de despostar una media res, usa {@code cuarto}. Los otros tres
+	 * se compran ya terminados (Fase 7, Carne agregado por feedback de la misma fase) — para
+	 * esos, {@code cuarto} siempre es {@code null}. */
+	public enum TipoProducto {
+		Vacuno, AchurasEmbutidos, Cerdo, Carne
+	}
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
@@ -29,9 +36,13 @@ public class CorteEntity {
 	@Column(nullable = false, unique = true)
 	private Integer plu;
 
+	// Nullable: solo aplica cuando tipoProducto = Vacuno (Fase 7).
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
 	private Cuarto cuarto;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "tipo_producto", nullable = false)
+	private TipoProducto tipoProducto = TipoProducto.Vacuno;
 
 	@Column(name = "zona_mapa")
 	private String zonaMapa;
@@ -50,11 +61,12 @@ public class CorteEntity {
 	protected CorteEntity() {
 	}
 
-	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, String zonaMapa, boolean activo,
-			BigDecimal precioVenta, UUID duenoId) {
+	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, TipoProducto tipoProducto, String zonaMapa,
+			boolean activo, BigDecimal precioVenta, UUID duenoId) {
 		this.nombre = nombre;
 		this.plu = plu;
 		this.cuarto = cuarto;
+		this.tipoProducto = tipoProducto;
 		this.zonaMapa = zonaMapa;
 		this.activo = activo;
 		this.precioVenta = precioVenta;
@@ -87,6 +99,14 @@ public class CorteEntity {
 
 	public void setCuarto(Cuarto cuarto) {
 		this.cuarto = cuarto;
+	}
+
+	public TipoProducto getTipoProducto() {
+		return tipoProducto;
+	}
+
+	public void setTipoProducto(TipoProducto tipoProducto) {
+		this.tipoProducto = tipoProducto;
 	}
 
 	public String getZonaMapa() {

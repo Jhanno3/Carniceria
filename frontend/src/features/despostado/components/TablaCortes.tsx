@@ -54,7 +54,7 @@ export function TablaCortes({
                   {corte.nombre}
                 </button>
               </td>
-              <td className="p-2 text-texto-secundario">{corte.cuarto}</td>
+              <td className="p-2 text-texto-secundario">{corte.cuarto ?? '—'}</td>
               <td className="p-2">
                 <label htmlFor={`kg-${corte.id}`} className="sr-only">
                   Kilos de {corte.nombre}

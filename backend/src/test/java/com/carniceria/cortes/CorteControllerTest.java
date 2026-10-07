@@ -258,6 +258,112 @@ class CorteControllerTest {
 	}
 
 	@Test
+	void crearCorte_conTipoProductoCerdoYSinCuarto_loCreaConCuartoNulo() throws Exception {
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Bondiola de prueba");
+		request.put("plu", 9008);
+		request.put("tipoProducto", "Cerdo");
+		request.put("zonaMapa", null);
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.tipoProducto").value("Cerdo"))
+				.andExpect(jsonPath("$.cuarto").isEmpty());
+	}
+
+	@Test
+	void crearCorte_conTipoProductoCarneYSinCuarto_loCreaConCuartoNulo() throws Exception {
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Rabo de prueba");
+		request.put("plu", 9013);
+		request.put("tipoProducto", "Carne");
+		request.put("zonaMapa", null);
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.tipoProducto").value("Carne"))
+				.andExpect(jsonPath("$.cuarto").isEmpty());
+	}
+
+	@Test
+	void crearCorte_conTipoProductoCerdoYCuarto_devuelve400CuartoNoAplica() throws Exception {
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Bondiola de prueba");
+		request.put("plu", 9009);
+		request.put("tipoProducto", "Cerdo");
+		request.put("cuarto", "Trasero");
+		request.put("zonaMapa", null);
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("CUARTO_NO_APLICA"));
+	}
+
+	@Test
+	void crearCorte_sinTipoProductoNiCuarto_asumeVacunoYExigeCuarto() throws Exception {
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Sin cuarto");
+		request.put("plu", 9010);
+		request.put("zonaMapa", null);
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("CUARTO_INVALIDO"));
+	}
+
+	@Test
+	void crearCorte_conTipoProductoInvalido_devuelve400() throws Exception {
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Tipo inválido");
+		request.put("plu", 9011);
+		request.put("tipoProducto", "Elefante");
+		request.put("zonaMapa", null);
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("TIPO_PRODUCTO_INVALIDO"));
+	}
+
+	@Test
+	void actualizarCorte_cambiaTipoProductoAchurasYLimpiaElCuarto() throws Exception {
+		Map<String, Object> alta = new java.util.HashMap<>();
+		alta.put("nombre", "Chorizo de prueba");
+		alta.put("plu", 9012);
+		alta.put("cuarto", "Ambos");
+		alta.put("zonaMapa", null);
+
+		String respuestaAlta = mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(alta)))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		String id = objectMapper.readTree(respuestaAlta).get("id").asText();
+
+		Map<String, Object> edicion = new java.util.HashMap<>();
+		edicion.put("nombre", "Chorizo de prueba");
+		edicion.put("plu", 9012);
+		edicion.put("tipoProducto", "AchurasEmbutidos");
+		edicion.put("zonaMapa", null);
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tipoProducto").value("AchurasEmbutidos"))
+				.andExpect(jsonPath("$.cuarto").isEmpty());
+	}
+
+	@Test
 	void empleadoDelMismoNegocio_puedeLeerPeroNoCrearCortes() throws Exception {
 		// Regresión de V11__fix_dueno_todo_exige_rol.sql: antes de esa migración,
 		// "cortes_dueno_todo" solo miraba dueno_id (no el rol), así que un empleado del

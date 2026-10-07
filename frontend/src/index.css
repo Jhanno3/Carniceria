@@ -1,5 +1,20 @@
 @import 'tailwindcss';
 
+/* Le dice al navegador qué variante de los controles nativos (scrollbars, etc.) dibujar. */
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}
+
+/* `color-scheme` solo no alcanza para el popup de <option> en Windows/Chrome — hay que
+   pisarle el color explícitamente. Esto sí lo respetan todos los navegadores. */
+option {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+}
+
 /* Tokens del sistema visual — especificacion-carniceria.md, sección 5 */
 @theme {
   --color-fondo: #ffffff;
@@ -81,4 +96,21 @@ body {
 /* Toda cifra numérica (kg, $, %) debe llevar esta clase para que las columnas queden alineadas (sección 5.2) */
 .numero {
   font-variant-numeric: tabular-nums;
+}
+
+/* Confirmación breve tipo "listo" (ej. modal de Añadir stock) — aparece con un pop chico,
+   nunca el único indicador de éxito (siempre va acompañada de texto, sección 5 "nada que
+   dependa solo del color"). */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-pop-in {
+  animation: pop-in 0.25s ease-out;
 }

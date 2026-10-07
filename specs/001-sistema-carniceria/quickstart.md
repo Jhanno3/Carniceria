@@ -283,3 +283,38 @@ paso 43), `ResumenDiaControllerTest` (paso 41/42), `DespostadoRepositoryTest`/
 vieja no se recalcule) es más una garantía de diseño —`VentaEntity.precioTotal` nunca se
 reescribe después de creada— que algo que un test de integración verifique directamente
 tocando el reloj; queda como paso manual.
+
+---
+
+# Quickstart — Fase 7: Catálogo de Achuras/Embutidos y Cerdo + alta rápida de stock
+
+Continúa la numeración de Fase 6. Reproduce `fase7/tasks-fase7.md` (FR-701 a FR-704).
+
+## Verificación
+
+52. Como `dueno`, ir a **Editar cortes** → nuevo corte → elegir "Tipo de producto" = Cerdo.
+    - **Esperado:** el selector "Cuarto" desaparece del formulario (no se pide, no aplica).
+      Guardar con nombre "Costilla de cerdo" y un PLU libre.
+53. Ir a **Control diario** y mirar el título "Stock por corte".
+    - **Esperado:** a la derecha hay un botón "Añadir stock".
+54. Click "Añadir stock". En el selector "Corte", revisar las opciones.
+    - **Esperado:** solo aparecen cortes de Achuras/Embutidos y Cerdo (incluido el recién
+      creado en el paso 52 y los 16 sembrados por esta fase) — ningún corte de la media res
+      (Vacío, Asado, etc.) aparece ahí.
+55. Elegir "Chorizo", cargar `5` kilos, dejar el precio de compra vacío, Guardar.
+    - **Esperado:** el modal se cierra; la tabla "Stock por corte" ahora muestra una fila de
+      "Chorizo" con `5,0 kg` en "Queda" — sin haber pasado por "Despostado".
+56. Ir a **Despostado** y mirar el selector "Corte" (tipoEntrada).
+    - **Esperado:** sigue mostrando solo los 7 valores de siempre (Media res, Delantero,
+      Pecho, Parrillero, Asado completo, Mocho, Rueda) — "Achuras y Embutidos"/"Cerdo" no
+      aparecen ahí, y ningún corte de esos dos tipos aparece nunca en la tabla "Cortes
+      vendibles" de esta pantalla.
+
+## Correspondencia con tests automatizados
+
+Los pasos 52-56 ya están cubiertos por tests automatizados: `CorteControllerTest`
+(`tipoProducto`/`cuarto` nulo y su validación cruzada), `FormularioCorte.test.tsx` (el
+selector "Cuarto" se oculta fuera de "Vacuno"), `MediaResControllerTest` (los dos
+`tipoEntrada` nuevos), `ModalAnadirStock.test.tsx` (el filtro del selector de cortes y el
+body que arma la mutación). Lo que el test automatizado no cubre es ver la tabla "Stock por
+corte" actualizarse en el navegador sin recargar — por eso sigue siendo un paso manual.

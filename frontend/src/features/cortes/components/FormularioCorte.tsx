@@ -3,15 +3,32 @@ import type { FormEvent } from 'react'
 import type { Corte, CorteFormValues } from '../api/types'
 
 const CUARTOS: CorteFormValues['cuarto'][] = ['Delantero', 'Trasero', 'Ambos']
+const TIPOS_DE_PRODUCTO: { valor: CorteFormValues['tipoProducto']; etiqueta: string }[] = [
+  { valor: 'Vacuno', etiqueta: 'Vacuno' },
+  { valor: 'AchurasEmbutidos', etiqueta: 'Achuras y Embutidos' },
+  { valor: 'Cerdo', etiqueta: 'Cerdo' },
+  { valor: 'Carne', etiqueta: 'Carne' },
+]
 
 function valoresIniciales(corteExistente: Corte | null): CorteFormValues {
   if (!corteExistente) {
-    return { nombre: '', plu: '', cuarto: 'Ambos', zonaMapa: '', activo: true, precioVenta: '' }
+    return {
+      nombre: '',
+      plu: '',
+      cuarto: 'Ambos',
+      tipoProducto: 'Vacuno',
+      zonaMapa: '',
+      activo: true,
+      precioVenta: '',
+    }
   }
   return {
     nombre: corteExistente.nombre,
     plu: String(corteExistente.plu),
-    cuarto: corteExistente.cuarto,
+    // Si el corte ya existente no es "Vacuno", cuarto viene null del backend — el
+    // formulario igual necesita un valor de arranque por si el dueño vuelve a "Vacuno".
+    cuarto: corteExistente.cuarto ?? 'Ambos',
+    tipoProducto: corteExistente.tipoProducto,
     zonaMapa: corteExistente.zonaMapa ?? '',
     activo: corteExistente.activo,
     precioVenta: corteExistente.precioVenta ?? '',
@@ -80,22 +97,42 @@ export function FormularioCorte({ corteExistente, onGuardar, onCancelar, guardan
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="corte-cuarto" className="text-etiqueta font-medium uppercase text-texto-secundario">
-            Cuarto
+          <label htmlFor="corte-tipo-producto" className="text-etiqueta font-medium uppercase text-texto-secundario">
+            Tipo de producto
           </label>
           <select
-            id="corte-cuarto"
-            value={valores.cuarto}
-            onChange={(e) => cambiar('cuarto', e.target.value as CorteFormValues['cuarto'])}
+            id="corte-tipo-producto"
+            value={valores.tipoProducto}
+            onChange={(e) => cambiar('tipoProducto', e.target.value as CorteFormValues['tipoProducto'])}
             className="h-11 rounded-xl border border-borde-campo px-3 text-cuerpo"
           >
-            {CUARTOS.map((cuarto) => (
-              <option key={cuarto} value={cuarto}>
-                {cuarto}
+            {TIPOS_DE_PRODUCTO.map(({ valor, etiqueta }) => (
+              <option key={valor} value={valor}>
+                {etiqueta}
               </option>
             ))}
           </select>
         </div>
+
+        {valores.tipoProducto === 'Vacuno' && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="corte-cuarto" className="text-etiqueta font-medium uppercase text-texto-secundario">
+              Cuarto
+            </label>
+            <select
+              id="corte-cuarto"
+              value={valores.cuarto}
+              onChange={(e) => cambiar('cuarto', e.target.value as CorteFormValues['cuarto'])}
+              className="h-11 rounded-xl border border-borde-campo px-3 text-cuerpo"
+            >
+              {CUARTOS.map((cuarto) => (
+                <option key={cuarto} value={cuarto}>
+                  {cuarto}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1">
           <label htmlFor="corte-zona-mapa" className="text-etiqueta font-medium uppercase text-texto-secundario">

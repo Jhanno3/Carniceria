@@ -141,6 +141,33 @@ class MediaResControllerTest {
 	}
 
 	@Test
+	void cargarEntrada_conTipoEntradaCarne_loPersisteYLoDevuelve() throws Exception {
+		Map<String, Object> body = cuerpoDeEjemplo();
+		body.put("tipoEntrada", "Carne");
+
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.tipoEntrada").value("Carne"));
+	}
+
+	@Test
+	void cargarEntrada_conTipoEntradaCerdo_loPersisteYLoDevuelve() throws Exception {
+		// Fase 7: estos dos valores no se ofrecen en el selector de Despostado, pero el
+		// backend los acepta igual que cualquier otro valor del enum (los pone el modal
+		// "Añadir stock" de Control diario).
+		Map<String, Object> body = cuerpoDeEjemplo();
+		body.put("tipoEntrada", "Cerdo");
+
+		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.tipoEntrada").value("Cerdo"));
+	}
+
+	@Test
 	void cargarEntrada_sinTipoEntrada_loGuardaComoMediaRes() throws Exception {
 		mockMvc.perform(post("/api/v1/medias-reses").with(jwtDeDueno())
 						.contentType(MediaType.APPLICATION_JSON)

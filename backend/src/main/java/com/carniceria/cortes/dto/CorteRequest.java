@@ -4,11 +4,17 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/** Mismo body para crear y editar un corte; {@code activo} se ignora al crear (siempre nace activo). */
+/** Mismo body para crear y editar un corte; {@code activo} se ignora al crear (siempre nace activo).
+ * {@code cuarto} ya no lleva {@code @NotBlank}: es obligatorio solo cuando {@code tipoProducto} es
+ * "Vacuno" (o se omite, que es el default) — esa regla la valida {@code CorteService}, no Bean
+ * Validation, porque depende de otro campo del mismo body (Fase 7). */
 public record CorteRequest(
 		@NotBlank String nombre,
 		@NotNull Integer plu,
-		@NotBlank String cuarto,
+		String cuarto,
+		// Opcional — ausente/blank se trata como "Vacuno" (mismo criterio permisivo que
+		// tipoEntrada en medias_reses, Fase 6).
+		String tipoProducto,
 		String zonaMapa,
 		Boolean activo,
 		// $/kg (FR-501): viaja como string, igual que precioKg en medias_reses — ver

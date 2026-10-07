@@ -13,6 +13,7 @@ import { calcularGananciaEstimada } from './modelo/gananciaEstimada'
 import { TIPOS_DE_ENTRADA, cortesHabilitados } from './modelo/tiposDeEntrada'
 import { parsearNumero } from '../../shared/formato/formatoEsAr'
 import { Modal } from '../../shared/ui/Modal'
+import { ConfirmacionExito } from '../../shared/ui/ConfirmacionExito'
 import type { CategoriaAnimal, TipoEntrada } from './api/types'
 
 // Clasificación típica de Mercado de Liniers (V17__categoria_animal.sql).
@@ -50,6 +51,10 @@ interface DespostadoPageProps {
 
 export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   const { data: cortes } = useCortes()
+  // Despostado es exclusivamente sobre media res: los cortes de Achuras/Embutidos, Cerdo y
+  // Carne (Fase 7) no se despostan acá — entran por el modal "Añadir stock" de Control
+  // diario. Sin este filtro aparecerían como filas sueltas en "Cortes vendibles".
+  const cortesVacuno = useMemo(() => (cortes ?? []).filter((c) => c.tipoProducto === 'Vacuno'), [cortes])
   const [proveedor, setProveedor] = useState('')
   const [pesoKgTexto, setPesoKgTexto] = useState('')
   const [precioKgTexto, setPrecioKgTexto] = useState('')
@@ -89,11 +94,11 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
 
   const precioVentaPorCorte = useMemo(() => {
     const mapa: Record<string, number | null> = {}
-    for (const corte of cortes ?? []) {
+    for (const corte of cortesVacuno) {
       mapa[corte.id] = corte.precioVenta == null ? null : Number(corte.precioVenta)
     }
     return mapa
-  }, [cortes])
+  }, [cortesVacuno])
 
   const gananciaEstimada = useMemo(
     () => calcularGananciaEstimada(kgPorCorteNumerico, resumen.costoKgVendible, precioVentaPorCorte),
@@ -101,17 +106,16 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   )
 
   const zonas = useMemo(() => {
-    if (!cortes) return []
     const kgPorZona = new Map<string, number>()
-    for (const corte of cortes) {
+    for (const corte of cortesVacuno) {
       if (!corte.zonaMapa) continue
       const kg = kgPorCorteNumerico[corte.id] ?? 0
       kgPorZona.set(corte.zonaMapa, (kgPorZona.get(corte.zonaMapa) ?? 0) + kg)
     }
     return Array.from(kgPorZona.entries()).map(([id, kg]) => ({ id, kg }))
-  }, [cortes, kgPorCorteNumerico])
+  }, [cortesVacuno, kgPorCorteNumerico])
 
-  const corteSeleccionado = cortes?.find((c) => c.id === corteSeleccionadoId) ?? null
+  const corteSeleccionado = cortesVacuno.find((c) => c.id === corteSeleccionadoId) ?? null
   const detalle = corteSeleccionado
     ? {
         nombre: corteSeleccionado.nombre,
@@ -132,9 +136,8 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   }
 
   function restablecerEjemplo() {
-    if (!cortes) return
     const prefill: Record<string, string> = {}
-    for (const corte of cortes) {
+    for (const corte of cortesVacuno) {
       const kgEjemplo = KG_DE_EJEMPLO_POR_PLU[corte.plu]
       if (kgEjemplo != null) prefill[corte.id] = String(kgEjemplo)
     }
@@ -263,7 +266,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
               {/* Scroll propio (max-h + overflow-y-auto), independiente del scroll de la página. */}
               <div className="max-h-[32rem] overflow-y-auto">
                 <TablaCortes
-                  cortes={cortes ?? []}
+                  cortes={cortesVacuno}
                   kgPorCorte={kgPorCorte}
                   onCambiarKg={(corteId, texto) => setKgPorCorte((previo) => ({ ...previo, [corteId]: texto }))}
                   corteSeleccionadoId={corteSeleccionadoId}
@@ -308,6 +311,7 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
 
       {cargarEntrada.isSuccess && (
         <Modal titulo="Entrada cargada con éxito" onCerrar={() => cargarEntrada.reset()}>
+          <ConfirmacionExito mensaje="Entrada cargada" />
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"

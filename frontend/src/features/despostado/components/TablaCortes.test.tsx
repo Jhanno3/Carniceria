@@ -5,8 +5,26 @@ import { TablaCortes } from './TablaCortes'
 import type { CorteResponse } from '../api/types'
 
 const cortes: CorteResponse[] = [
-  { id: 'c1', nombre: 'Vacío', plu: 12, cuarto: 'Trasero', zonaMapa: 'vacio', activo: true, precioVenta: null },
-  { id: 'c2', nombre: 'Asado', plu: 11, cuarto: 'Delantero', zonaMapa: 'asado', activo: true, precioVenta: null },
+  {
+    id: 'c1',
+    nombre: 'Vacío',
+    plu: 12,
+    cuarto: 'Trasero',
+    tipoProducto: 'Vacuno',
+    zonaMapa: 'vacio',
+    activo: true,
+    precioVenta: null,
+  },
+  {
+    id: 'c2',
+    nombre: 'Asado',
+    plu: 11,
+    cuarto: 'Delantero',
+    tipoProducto: 'Vacuno',
+    zonaMapa: 'asado',
+    activo: true,
+    precioVenta: null,
+  },
 ]
 
 describe('TablaCortes', () => {
@@ -109,5 +127,29 @@ describe('TablaCortes', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Vacío' }))
 
     expect(onSeleccionarCorte).toHaveBeenCalledWith('c1')
+  })
+
+  it('un corte sin cuarto (tipoProducto distinto de Vacuno, Fase 7) muestra "—" en esa columna', () => {
+    const corteDeCerdo: CorteResponse = {
+      id: 'c3',
+      nombre: 'Bondiola',
+      plu: 41,
+      cuarto: null,
+      tipoProducto: 'Cerdo',
+      zonaMapa: null,
+      activo: true,
+      precioVenta: null,
+    }
+    render(
+      <TablaCortes
+        cortes={[corteDeCerdo]}
+        kgPorCorte={{}}
+        onCambiarKg={() => {}}
+        corteSeleccionadoId={null}
+        onSeleccionarCorte={() => {}}
+      />,
+    )
+
+    expect(screen.getByText('—')).toBeInTheDocument()
   })
 })

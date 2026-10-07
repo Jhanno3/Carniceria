@@ -5,8 +5,26 @@ import { TablaDeCortes } from './TablaDeCortes'
 import type { Corte } from '../api/types'
 
 const cortes: Corte[] = [
-  { id: 'c1', nombre: 'Vacío', plu: 12, cuarto: 'Trasero', zonaMapa: 'vacio', activo: true, precioVenta: '6500.00' },
-  { id: 'c2', nombre: 'Asado', plu: 11, cuarto: 'Delantero', zonaMapa: 'asado', activo: false, precioVenta: null },
+  {
+    id: 'c1',
+    nombre: 'Vacío',
+    plu: 12,
+    cuarto: 'Trasero',
+    tipoProducto: 'Vacuno',
+    zonaMapa: 'vacio',
+    activo: true,
+    precioVenta: '6500.00',
+  },
+  {
+    id: 'c2',
+    nombre: 'Asado',
+    plu: 11,
+    cuarto: 'Delantero',
+    tipoProducto: 'Vacuno',
+    zonaMapa: 'asado',
+    activo: false,
+    precioVenta: null,
+  },
 ]
 
 describe('TablaDeCortes', () => {
@@ -52,5 +70,23 @@ describe('TablaDeCortes', () => {
   it('sin cortes, muestra un mensaje neutro', () => {
     render(<TablaDeCortes cortes={[]} onEditar={vi.fn()} onCambiarActivo={vi.fn()} />)
     expect(screen.getByText(/no hay cortes/i)).toBeInTheDocument()
+  })
+
+  it('un corte sin cuarto (tipoProducto distinto de Vacuno, Fase 7) muestra "—"', () => {
+    const corteDeCerdo: Corte = {
+      id: 'c3',
+      nombre: 'Bondiola',
+      plu: 41,
+      cuarto: null,
+      tipoProducto: 'Cerdo',
+      zonaMapa: null,
+      activo: true,
+      precioVenta: null,
+    }
+    render(<TablaDeCortes cortes={[corteDeCerdo]} onEditar={vi.fn()} onCambiarActivo={vi.fn()} />)
+
+    // "—" también sale en zona de mapa y precio de venta (ambos null acá): confirmamos que
+    // aparece al menos para cuarto, no que sea el único "—" de la fila.
+    expect(within(screen.getByTestId('fila-corte-c3')).getAllByText('—').length).toBeGreaterThanOrEqual(1)
   })
 })

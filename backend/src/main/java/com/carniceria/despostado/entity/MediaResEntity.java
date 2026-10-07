@@ -27,8 +27,11 @@ public class MediaResEntity {
 	// entera, sin restricción" (default), el resto son cortes comerciales más chicos. El
 	// mapeo de cada uno a los cortes del catálogo que habilita vive solo en el frontend
 	// (fase6/tasks-fase6.md) — el backend no lo valida, es nada más una restricción de UI.
+	// AchurasEmbutidos/Cerdo/Carne (Fase 7): no se ofrecen en el selector "Corte" de
+	// Despostado — los pone el modal "Añadir stock" de Control diario por su cuenta
+	// (tasks-fase7.md).
 	public enum TipoEntrada {
-		MediaRes, Delantero, Pecho, Parrillero, AsadoCompleto, Mocho, Rueda
+		MediaRes, Delantero, Pecho, Parrillero, AsadoCompleto, Mocho, Rueda, AchurasEmbutidos, Cerdo, Carne
 	}
 
 	@Id
