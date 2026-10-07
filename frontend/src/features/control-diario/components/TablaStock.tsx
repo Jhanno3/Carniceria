@@ -38,7 +38,7 @@ export function TablaStock({ stock }: TablaStockProps) {
                   <div className="flex items-center gap-2">
                     <span className="numero text-texto">{formatearKg(stockKg)}</span>
                     {fila.quedaPoco && (
-                      <span className="rounded-full bg-aviso-texto px-2 py-0.5 text-etiqueta font-medium text-white">
+                      <span className="rounded-full bg-aviso-texto px-2 py-0.5 text-etiqueta font-medium text-fondo">
                         Queda poco
                       </span>
                     )}

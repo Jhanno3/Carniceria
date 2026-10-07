@@ -10,6 +10,7 @@ import { usePerfilPropio } from './features/perfiles/api/usePerfilPropio'
 import { UsuariosPage } from './features/perfiles/UsuariosPage'
 import { ReportesPage } from './features/reportes/ReportesPage'
 import { supabase } from './shared/supabase/cliente'
+import { BotonTema } from './shared/ui/BotonTema'
 
 type Seccion = 'inicio' | 'despostado' | 'control-diario' | 'cortes' | 'ajustes' | 'reportes' | 'usuarios'
 
@@ -29,6 +30,7 @@ function EstadoDeCuenta({ mensaje }: { mensaje: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-fondo-suave-2 p-4">
       <p className="max-w-sm text-center text-cuerpo text-texto">{mensaje}</p>
+      <BotonTema className="fixed left-4 top-4" />
       <CerrarSesion />
     </main>
   )
@@ -57,7 +59,7 @@ function NavOperativa({
       <button
         type="button"
         onClick={() => onCambiarSeccion(id)}
-        className={`h-11 rounded-full px-4 font-medium ${activa ? 'bg-texto text-white' : 'text-texto'}`}
+        className={`h-11 rounded-full px-4 font-medium transition-colors ${activa ? 'bg-texto text-fondo' : 'text-texto hover:bg-fondo-suave'}`}
       >
         {etiqueta}
       </button>
@@ -75,13 +77,16 @@ function NavOperativa({
         {mostrarReportes && pastilla('reportes', 'Reportes')}
         {mostrarUsuarios && pastilla('usuarios', 'Usuarios')}
       </div>
-      <button
-        type="button"
-        onClick={() => supabase.auth.signOut()}
-        className="h-11 rounded-xl border border-borde-campo px-4 text-cuerpo text-texto"
-      >
-        Cerrar sesión
-      </button>
+      <div className="flex items-center gap-2">
+        <BotonTema />
+        <button
+          type="button"
+          onClick={() => supabase.auth.signOut()}
+          className="h-11 rounded-xl border border-borde-campo px-4 text-cuerpo text-texto"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </nav>
   )
 }

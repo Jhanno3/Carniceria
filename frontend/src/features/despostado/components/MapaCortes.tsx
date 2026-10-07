@@ -110,7 +110,7 @@ export function MapaCortes({ zonas, zonaResaltada, detalle }: MapaCortesProps) {
           aria-label="Mapa de cortes de la media res"
         >
           {/* Silueta de fondo: tapa cualquier hueco entre zonas. */}
-          <polygon points={SILUETA} fill="#e7e5e4" />
+          <polygon points={SILUETA} fill="var(--color-borde)" />
 
           {ZONAS.map((zona) => {
             const kg = kgPorZona.get(zona.id) ?? 0
@@ -123,7 +123,7 @@ export function MapaCortes({ zonas, zonaResaltada, detalle }: MapaCortesProps) {
                 data-testid={indice === 0 ? `zona-${zona.id}` : undefined}
                 points={puntos}
                 fill={color}
-                stroke={resaltada ? '#000000' : '#ffffff'}
+                stroke={resaltada ? 'var(--color-texto)' : 'var(--color-fondo-suave-2)'}
                 strokeWidth={resaltada ? 4 : 1.5}
                 strokeLinejoin="round"
               />
