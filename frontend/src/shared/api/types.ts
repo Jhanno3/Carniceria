@@ -6,7 +6,9 @@ export interface CorteResponse {
   id: string
   nombre: string
   plu: number
-  cuarto: 'Delantero' | 'Trasero' | 'Ambos'
+  // null solo cuando tipoProducto no es "Vacuno" (Fase 7) — no aplica fuera de la media res.
+  cuarto: 'Delantero' | 'Trasero' | 'Ambos' | null
+  tipoProducto: 'Vacuno' | 'AchurasEmbutidos' | 'Cerdo' | 'Carne'
   zonaMapa: string | null
   activo: boolean
   /** $/kg (Fase 5, FR-501) — precio que se le cobra al cliente, nunca un costo. */

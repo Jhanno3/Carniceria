@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCortes } from './api/useCortes'
 import { useCrearCorte } from './api/useCrearCorte'
 import { useActualizarCorte } from './api/useActualizarCorte'
 import { FormularioCorte } from './components/FormularioCorte'
 import { TablaDeCortes } from './components/TablaDeCortes'
 import { Modal } from '../../shared/ui/Modal'
+import { ConfirmacionExito } from '../../shared/ui/ConfirmacionExito'
 import { ApiError } from '../../shared/api/apiFetch'
 import type { Corte, CorteFormValues } from './api/types'
+
+const MS_CONFIRMACION = 1100
 
 /** FR-109/FR-501: pantalla "Editar cortes" — alta, edición y activar/desactivar. */
 export function CortesPage() {
@@ -15,9 +18,21 @@ export function CortesPage() {
   const actualizar = useActualizarCorte()
   const [corteEnEdicion, setCorteEnEdicion] = useState<Corte | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [guardadoOk, setGuardadoOk] = useState(false)
 
   const formularioAbierto = corteEnEdicion !== undefined
   const guardando = crear.isPending || actualizar.isPending
+
+  // Confirmación breve antes de cerrar el modal solo (mismo criterio que "Añadir stock" de
+  // Control diario, pedido por chat).
+  useEffect(() => {
+    if (!guardadoOk) return
+    const id = setTimeout(() => {
+      setGuardadoOk(false)
+      setCorteEnEdicion(undefined)
+    }, MS_CONFIRMACION)
+    return () => clearTimeout(id)
+  }, [guardadoOk])
 
   async function guardar(valores: CorteFormValues) {
     setError(null)
@@ -27,7 +42,7 @@ export function CortesPage() {
       } else {
         await crear.mutateAsync(valores)
       }
-      setCorteEnEdicion(undefined)
+      setGuardadoOk(true)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No pudimos guardar los cambios.')
     }
@@ -40,7 +55,8 @@ export function CortesPage() {
         id: corte.id,
         nombre: corte.nombre,
         plu: String(corte.plu),
-        cuarto: corte.cuarto,
+        cuarto: corte.cuarto ?? 'Ambos',
+        tipoProducto: corte.tipoProducto,
         zonaMapa: corte.zonaMapa ?? '',
         activo: !corte.activo,
         precioVenta: corte.precioVenta ?? '',
@@ -81,12 +97,16 @@ export function CortesPage() {
           titulo={corteEnEdicion ? 'Editar corte' : 'Nuevo corte'}
           onCerrar={() => setCorteEnEdicion(undefined)}
         >
-          <FormularioCorte
-            corteExistente={corteEnEdicion ?? null}
-            onGuardar={guardar}
-            onCancelar={() => setCorteEnEdicion(undefined)}
-            guardando={guardando}
-          />
+          {guardadoOk ? (
+            <ConfirmacionExito mensaje={corteEnEdicion ? 'Corte editado' : 'Corte creado'} />
+          ) : (
+            <FormularioCorte
+              corteExistente={corteEnEdicion ?? null}
+              onGuardar={guardar}
+              onCancelar={() => setCorteEnEdicion(undefined)}
+              guardando={guardando}
+            />
+          )}
         </Modal>
       )}
     </main>

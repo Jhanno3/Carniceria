@@ -287,7 +287,9 @@ class PerfilControllerTest {
 		// su propio negocio de prueba con el catálogo de 17 cortes sembrado (PLU 1-21) —
 		// un PLU bajo colisionaría con "cortes_dueno_id_plu_key".
 		int plu = java.util.concurrent.ThreadLocalRandom.current().nextInt(100_000, 999_999);
-		var corte = new CorteEntity("Corte de prueba", plu, CorteEntity.Cuarto.Ambos, null, true, null, duenoId);
+		var corte = new CorteEntity(
+				"Corte de prueba", plu, CorteEntity.Cuarto.Ambos, CorteEntity.TipoProducto.Vacuno, null, true, null,
+				duenoId);
 		corte = corteRepository.save(corte);
 		corteRepository.flush();
 		return corte.getId();

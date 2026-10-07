@@ -2,6 +2,10 @@
 // cortes del catálogo que cada uno habilita vive solo acá (frontend) — el backend no lo
 // valida, es nada más una restricción de interfaz (ver fase6/tasks-fase6.md).
 
+// AchurasEmbutidos/Cerdo/Carne (Fase 7) no van en TIPOS_DE_ENTRADA ni en CORTES_POR_TIPO:
+// no se ofrecen en este selector — los pone el modal "Añadir stock" de Control diario por
+// su cuenta (tasks-fase7.md). Están en el type union solo para que ese modal pueda tipar
+// el tipoEntrada que manda en el POST reusando este mismo tipo.
 export type TipoEntrada =
   | 'MediaRes'
   | 'Delantero'
@@ -10,6 +14,9 @@ export type TipoEntrada =
   | 'AsadoCompleto'
   | 'Mocho'
   | 'Rueda'
+  | 'AchurasEmbutidos'
+  | 'Cerdo'
+  | 'Carne'
 
 export const TIPOS_DE_ENTRADA: { valor: TipoEntrada; etiqueta: string }[] = [
   { valor: 'MediaRes', etiqueta: 'Media res' },

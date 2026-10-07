@@ -37,7 +37,7 @@ export function TablaDeCortes({ cortes, onEditar, onCambiarActivo, guardando }: 
             >
               <td className="p-2 font-medium text-texto">{corte.nombre}</td>
               <td className="numero p-2 text-texto-secundario">{corte.plu}</td>
-              <td className="p-2 text-texto-secundario">{corte.cuarto}</td>
+              <td className="p-2 text-texto-secundario">{corte.cuarto ?? '—'}</td>
               <td className="p-2 text-texto-secundario">{corte.zonaMapa ?? '—'}</td>
               <td className="numero p-2 text-texto-secundario">
                 {corte.precioVenta ? formatearPesos(Number(corte.precioVenta)) : '—'}

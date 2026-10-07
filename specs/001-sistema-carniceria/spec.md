@@ -261,3 +261,11 @@ La Fase 6 (tipo de entrada "Corte" en Despostado: Media res/Delantero/Pecho/Parr
 Asado completo/Mocho/Rueda, atenúa los cortes que no aplican) también se pidió directo por
 chat — sus requisitos (FR-601/FR-602) y el mapeo completo de cortes por tipo están en
 `fase6/tasks-fase6.md`, mismo criterio que la sección 11.
+
+## 13. Fase 7 (nota, no FR formales)
+
+La Fase 7 (catálogo de "Achuras y Embutidos" y "Cerdo" — 16 cortes nuevos que no se
+despostan de una media res — más un botón "Añadir stock" en Control diario para darles
+stock directo, sin pasar por Despostado) también se pidió directo por chat — sus requisitos
+(FR-701 a FR-704), la tabla completa de cortes/PLU y las decisiones de diseño están en
+`fase7/tasks-fase7.md`, mismo criterio que las secciones 11 y 12.

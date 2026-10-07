@@ -136,7 +136,7 @@ class DespostadoRepositoryTest {
 	private void fijarPrecioVenta(UUID corteId, String precioVenta) {
 		CorteEntity corte = corteRepository.findById(corteId).orElseThrow();
 		corteService.actualizar(corteId, new CorteRequest(
-				corte.getNombre(), corte.getPlu(), corte.getCuarto().name(), corte.getZonaMapa(),
-				corte.isActivo(), precioVenta));
+				corte.getNombre(), corte.getPlu(), corte.getCuarto().name(), corte.getTipoProducto().name(),
+				corte.getZonaMapa(), corte.isActivo(), precioVenta));
 	}
 }

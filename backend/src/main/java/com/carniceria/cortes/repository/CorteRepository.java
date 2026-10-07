@@ -2,6 +2,7 @@ package com.carniceria.cortes.repository;
 
 import com.carniceria.cortes.entity.CorteEntity;
 import com.carniceria.cortes.entity.CorteEntity.Cuarto;
+import com.carniceria.cortes.entity.CorteEntity.TipoProducto;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +29,10 @@ public interface CorteRepository extends JpaRepository<CorteEntity, UUID> {
 	// el UPDATE directo ya haya cambiado la fila en la base.
 	@Modifying(clearAutomatically = true)
 	@Query("update CorteEntity c set c.nombre = :nombre, c.plu = :plu, c.cuarto = :cuarto, "
-			+ "c.zonaMapa = :zonaMapa, c.activo = :activo, c.precioVenta = :precioVenta where c.id = :id")
+			+ "c.tipoProducto = :tipoProducto, c.zonaMapa = :zonaMapa, c.activo = :activo, "
+			+ "c.precioVenta = :precioVenta where c.id = :id")
 	int actualizar(@Param("id") UUID id, @Param("nombre") String nombre, @Param("plu") Integer plu,
-			@Param("cuarto") Cuarto cuarto, @Param("zonaMapa") String zonaMapa, @Param("activo") boolean activo,
+			@Param("cuarto") Cuarto cuarto, @Param("tipoProducto") TipoProducto tipoProducto,
+			@Param("zonaMapa") String zonaMapa, @Param("activo") boolean activo,
 			@Param("precioVenta") BigDecimal precioVenta);
 }

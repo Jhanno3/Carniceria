@@ -5,6 +5,7 @@ import { UltimoEscaneo } from './components/UltimoEscaneo'
 import { ResumenDia } from './components/ResumenDia'
 import { VentasDeHoy } from './components/VentasDeHoy'
 import { TablaStock } from './components/TablaStock'
+import { ModalAnadirStock } from './components/ModalAnadirStock'
 import { IndicadorPendientes } from './components/IndicadorPendientes'
 import { useVentas } from './api/useVentas'
 import { useStock } from './api/useStock'
@@ -18,6 +19,7 @@ function hoyIso(): string {
 
 export function ControlDiarioPage() {
   const [ultimoResultado, setUltimoResultado] = useState<ResultadoEscaneo | null>(null)
+  const [modalAnadirStockAbierto, setModalAnadirStockAbierto] = useState(false)
   const hoy = hoyIso()
   const { data: ventas } = useVentas(hoy, hoy)
   const { data: stock } = useStock()
@@ -58,9 +60,20 @@ export function ControlDiarioPage() {
       )}
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-titulo-seccion font-titulos font-bold text-texto">Stock por corte</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-titulo-seccion font-titulos font-bold text-texto">Stock por corte</h2>
+          <button
+            type="button"
+            onClick={() => setModalAnadirStockAbierto(true)}
+            className="h-11 rounded-xl border border-borde-campo px-4 font-medium text-texto"
+          >
+            Añadir stock
+          </button>
+        </div>
         <TablaStock stock={stock ?? []} />
       </div>
+
+      {modalAnadirStockAbierto && <ModalAnadirStock onCerrar={() => setModalAnadirStockAbierto(false)} />}
     </main>
   )
 }
