@@ -20,11 +20,14 @@
   --color-aviso-texto: #9a3412;
   --color-aviso-fondo: #fff4e5;
   --color-error: #b91c1c;
+  /* Fondo de error, separado de los `bg-red-50` sueltos que había antes, para que el modo oscuro los pueda redefinir junto con el resto. */
+  --color-error-fondo: #fef2f2;
 
   /* Fila seleccionada en la tabla de cortes (sección 4.1: "rosado suave") */
   --color-rosado: #fce7f3;
 
-  /* Escala del mapa de cortes: de rgb(246,228,224) a rgb(110,20,20) — ver modelo/colorZonaMapa.ts */
+  /* Escala del mapa de cortes: de rgb(246,228,224) a rgb(110,20,20) — ver modelo/colorZonaMapa.ts.
+     No cambia con el tema: es una escala de datos (más oscuro = más kilos), no un color de superficie. */
   --color-mapa-claro: #f6e4e0;
   --color-mapa-oscuro: #6e1414;
 
@@ -39,11 +42,40 @@
   --text-etiqueta: 13px;
 }
 
+/* Modo oscuro: redefine los mismos tokens de superficie/texto/acento sobre <html class="dark">
+   (ver shared/tema/useTema.ts). Los componentes no cambian — todos usan las clases de Tailwind
+   generadas a partir de estos tokens (bg-fondo, text-texto, etc.), así que alcanza con pisar
+   las variables acá. La escala del mapa de cortes queda afuera a propósito (ver arriba). */
+.dark {
+  --color-fondo: #1c1917;
+  --color-texto: #f5f5f4;
+  --color-texto-secundario: #a8a29e;
+  --color-borde: #57534e;
+  --color-borde-campo: #78716c;
+  --color-fondo-suave: #44403c;
+  --color-fondo-suave-2: #292524;
+
+  --color-vendible: #ef4444;
+  --color-hueso: #60a5fa;
+  --color-grasa: #93c5fd;
+  --color-merma: #bfdbfe;
+
+  --color-exito-texto: #86efac;
+  --color-exito-fondo: #14532d;
+  --color-aviso-texto: #fdba74;
+  --color-aviso-fondo: #7c2d12;
+  --color-error: #f87171;
+  --color-error-fondo: #7f1d1d;
+
+  --color-rosado: #500724;
+}
+
 body {
   margin: 0;
   background: var(--color-fondo);
   color: var(--color-texto);
   font-family: var(--font-texto);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 /* Toda cifra numérica (kg, $, %) debe llevar esta clase para que las columnas queden alineadas (sección 5.2) */

@@ -161,6 +161,26 @@ Rojo (vendible) y azul (pérdida) difieren también en luminosidad, así se dist
 - Todo campo tiene su `<label>`. Todo lo clickeable es un `<button>` o `<a>` real. Foco visible.
 - Responsive: las tarjetas y columnas se apilan en el celular; las tablas anchas se desplazan dentro de su caja, nunca la página entera.
 
+### 5.5 Modo oscuro
+
+El usuario elige manualmente entre modo claro y oscuro (botón sol/luna, visible en el login y en la barra de navegación); arranca según `prefers-color-scheme` del sistema si todavía no eligió nada, y la elección queda guardada en el navegador. Mismos componentes, mismos tamaños — solo cambian los colores de superficie y acento:
+
+| Uso | Color (claro) | Color (oscuro) |
+|---|---|---|
+| Fondo | `#FFFFFF` | `#1C1917` |
+| Fondos suaves | `#F5F5F4`, `#FAFAF9` | `#44403C`, `#292524` |
+| Texto principal | `#1C1917` | `#F5F5F4` |
+| Texto secundario | `#57534E` | `#A8A29E` |
+| Bordes | `#E7E5E4`, campos `#D6D3D1` | `#57534E`, campos `#78716C` |
+| Acento: carne vendible, botón principal | `#8E1B1B` | `#EF4444` |
+| Pérdida: hueso / grasa / merma | `#2F5D8A` / `#6E93BA` / `#A9C1DB` | `#60A5FA` / `#93C5FD` / `#BFDBFE` |
+| Éxito | texto `#166534`, fondo `#DCFCE7` | texto `#86EFAC`, fondo `#14532D` |
+| Aviso | texto `#9A3412`, fondo `#FFF4E5` | texto `#FDBA74`, fondo `#7C2D12` |
+| Error | texto `#B91C1C`, fondo `#FEF2F2` | texto `#F87171`, fondo `#7F1D1D` |
+| Fila seleccionada (rosado) | `#FCE7F3` | `#500724` |
+
+La escala del mapa de cortes (`rgb(246,228,224)` → `rgb(110,20,20)`, sección 5.1) **no cambia** con el tema: es una escala de datos ("más oscuro = más kilos"), no un color de superficie, y cambiarla rompería su lectura entre los dos modos.
+
 ---
 
 ## 6. Cálculos

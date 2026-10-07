@@ -11,6 +11,17 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Public+Sans:wght@400;500;600;700&display=swap"
     />
     <title>Carnicería — Despostado y control diario</title>
+    <script>
+      // Aplica el tema antes del primer paint para evitar el flash del tema incorrecto.
+      // Misma lógica que shared/tema/useTema.ts (clave y fallback a prefers-color-scheme).
+      ;(function () {
+        try {
+          var guardado = localStorage.getItem('carniceria:tema')
+          var oscuro = guardado ? guardado === 'oscuro' : window.matchMedia('(prefers-color-scheme: dark)').matches
+          document.documentElement.classList.toggle('dark', oscuro)
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -71,7 +71,7 @@ function MensajeDeControl({ sinAsignarKg }: { sinAsignarKg: number }) {
     )
   }
   return (
-    <p className="rounded-xl bg-red-50 px-3 py-1 text-cuerpo text-error">
+    <p className="rounded-xl bg-error-fondo px-3 py-1 text-cuerpo text-error">
       Sobran {formatearKg(Math.abs(sinAsignarKg))}: revisá las pesadas
     </p>
   )

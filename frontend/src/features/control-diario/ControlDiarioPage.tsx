@@ -32,7 +32,7 @@ export function ControlDiarioPage() {
       <IndicadorPendientes />
 
       {noSincronizadas.length > 0 && (
-        <div className="rounded-xl bg-red-50 p-3 text-cuerpo text-error">
+        <div className="rounded-xl bg-error-fondo p-3 text-cuerpo text-error">
           <p className="font-medium">No se pudieron sincronizar {noSincronizadas.length} venta(s):</p>
           <ul className="list-inside list-disc">
             {noSincronizadas.map((v, i) => (

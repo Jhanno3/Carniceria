@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BotonTema } from '../../shared/ui/BotonTema'
 import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
 
@@ -13,6 +14,7 @@ export function AuthPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-fondo-suave-2 p-4">
+      <BotonTema className="fixed right-4 top-4" />
       <div className="w-full max-w-sm rounded-xl border border-borde bg-fondo p-4">
         {modo === 'login' ? (
           <LoginForm onCambiarARegistro={() => setModo('registro')} />

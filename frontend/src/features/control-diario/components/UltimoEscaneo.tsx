@@ -30,7 +30,7 @@ export function UltimoEscaneo({ resultado }: UltimoEscaneoProps) {
   }
 
   return (
-    <div className="rounded-xl bg-red-50 p-3 text-cuerpo text-error">
+    <div className="rounded-xl bg-error-fondo p-3 text-cuerpo text-error">
       {MENSAJES_DE_ERROR[resultado.codigo] ?? resultado.mensaje}
     </div>
   )
