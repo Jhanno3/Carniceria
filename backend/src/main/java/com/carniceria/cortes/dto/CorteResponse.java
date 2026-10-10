@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record CorteResponse(
 		UUID id, String nombre, Integer plu, String cuarto, String tipoProducto, String zonaMapa, boolean activo,
-		String precioVenta) {
+		String precioVenta, UUID descuentaStockDeCorteId) {
 
 	public static CorteResponse de(CorteEntity entity) {
 		return new CorteResponse(
@@ -17,6 +17,7 @@ public record CorteResponse(
 				entity.getTipoProducto().name(),
 				entity.getZonaMapa(),
 				entity.isActivo(),
-				BigDecimals.aTexto(entity.getPrecioVenta()));
+				BigDecimals.aTexto(entity.getPrecioVenta()),
+				entity.getDescuentaStockDeCorteId());
 	}
 }

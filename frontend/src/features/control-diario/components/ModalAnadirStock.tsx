@@ -45,7 +45,9 @@ export function ModalAnadirStock({ onCerrar }: ModalAnadirStockProps) {
     return () => clearTimeout(id)
   }, [guardadoOk, onCerrar])
 
-  const cortesDisponibles = (cortes ?? []).filter((c) => c.activo && c.tipoProducto !== 'Vacuno')
+  const cortesDisponibles = (cortes ?? []).filter(
+    (c) => c.activo && c.tipoProducto !== 'Vacuno' && c.descuentaStockDeCorteId == null,
+  )
   const sinCortesDisponibles = cortes !== undefined && cortesDisponibles.length === 0
   const cortesDeLaCategoria = categoria === '' ? [] : cortesDisponibles.filter((c) => c.tipoProducto === categoria)
 

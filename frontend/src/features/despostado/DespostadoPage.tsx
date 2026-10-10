@@ -53,8 +53,13 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
   const { data: cortes } = useCortes()
   // Despostado es exclusivamente sobre media res: los cortes de Achuras/Embutidos, Cerdo y
   // Carne (Fase 7) no se despostan acá — entran por el modal "Añadir stock" de Control
-  // diario. Sin este filtro aparecerían como filas sueltas en "Cortes vendibles".
-  const cortesVacuno = useMemo(() => (cortes ?? []).filter((c) => c.tipoProducto === 'Vacuno'), [cortes])
+  // diario. Sin este filtro aparecerían como filas sueltas en "Cortes vendibles". Los que
+  // "descuentan el stock de" otro corte (pedido por chat) tampoco tienen stock propio que
+  // cargar acá, aunque sean Vacuno.
+  const cortesVacuno = useMemo(
+    () => (cortes ?? []).filter((c) => c.tipoProducto === 'Vacuno' && c.descuentaStockDeCorteId == null),
+    [cortes],
+  )
   const [proveedor, setProveedor] = useState('')
   const [pesoKgTexto, setPesoKgTexto] = useState('')
   const [precioKgTexto, setPrecioKgTexto] = useState('')
@@ -131,6 +136,8 @@ export function DespostadoPage({ onIrAInicio }: DespostadoPageProps) {
         prefill[corte.corteId] = corte.kgEstimado
       }
       setKgPorCorte(prefill)
+      const { hueso, grasa, merma } = estimacion.data.perdidas
+      setPerdidas({ hueso: hueso ?? '', grasa: grasa ?? '', merma: merma ?? '' })
     }
     setModo(modoElegido)
   }

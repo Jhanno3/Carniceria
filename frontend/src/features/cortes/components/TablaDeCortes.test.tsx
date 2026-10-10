@@ -14,6 +14,7 @@ const cortes: Corte[] = [
     zonaMapa: 'vacio',
     activo: true,
     precioVenta: '6500.00',
+    descuentaStockDeCorteId: null,
   },
   {
     id: 'c2',
@@ -24,6 +25,7 @@ const cortes: Corte[] = [
     zonaMapa: 'asado',
     activo: false,
     precioVenta: null,
+    descuentaStockDeCorteId: null,
   },
 ]
 
@@ -82,11 +84,29 @@ describe('TablaDeCortes', () => {
       zonaMapa: null,
       activo: true,
       precioVenta: null,
+      descuentaStockDeCorteId: null,
     }
     render(<TablaDeCortes cortes={[corteDeCerdo]} onEditar={vi.fn()} onCambiarActivo={vi.fn()} />)
 
     // "—" también sale en zona de mapa y precio de venta (ambos null acá): confirmamos que
     // aparece al menos para cuarto, no que sea el único "—" de la fila.
     expect(within(screen.getByTestId('fila-corte-c3')).getAllByText('—').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('un corte que descuenta el stock de otro muestra el nombre del destino en "Descuenta de"', () => {
+    const bifeDeChorizo: Corte = {
+      id: 'c4',
+      nombre: 'Bife de chorizo',
+      plu: 50,
+      cuarto: 'Trasero',
+      tipoProducto: 'Vacuno',
+      zonaMapa: null,
+      activo: true,
+      precioVenta: '9000.00',
+      descuentaStockDeCorteId: 'c2', // Asado
+    }
+    render(<TablaDeCortes cortes={[...cortes, bifeDeChorizo]} onEditar={vi.fn()} onCambiarActivo={vi.fn()} />)
+
+    expect(within(screen.getByTestId('fila-corte-c4')).getByText('Asado')).toBeInTheDocument()
   })
 })

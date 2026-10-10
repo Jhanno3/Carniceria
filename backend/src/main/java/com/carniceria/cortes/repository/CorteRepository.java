@@ -30,9 +30,11 @@ public interface CorteRepository extends JpaRepository<CorteEntity, UUID> {
 	@Modifying(clearAutomatically = true)
 	@Query("update CorteEntity c set c.nombre = :nombre, c.plu = :plu, c.cuarto = :cuarto, "
 			+ "c.tipoProducto = :tipoProducto, c.zonaMapa = :zonaMapa, c.activo = :activo, "
-			+ "c.precioVenta = :precioVenta where c.id = :id")
+			+ "c.precioVenta = :precioVenta, c.descuentaStockDeCorteId = :descuentaStockDeCorteId "
+			+ "where c.id = :id")
 	int actualizar(@Param("id") UUID id, @Param("nombre") String nombre, @Param("plu") Integer plu,
 			@Param("cuarto") Cuarto cuarto, @Param("tipoProducto") TipoProducto tipoProducto,
 			@Param("zonaMapa") String zonaMapa, @Param("activo") boolean activo,
-			@Param("precioVenta") BigDecimal precioVenta);
+			@Param("precioVenta") BigDecimal precioVenta,
+			@Param("descuentaStockDeCorteId") UUID descuentaStockDeCorteId);
 }

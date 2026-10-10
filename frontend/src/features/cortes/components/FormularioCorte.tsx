@@ -20,6 +20,7 @@ function valoresIniciales(corteExistente: Corte | null): CorteFormValues {
       zonaMapa: '',
       activo: true,
       precioVenta: '',
+      descuentaStockDeCorteId: '',
     }
   }
   return {
@@ -32,21 +33,30 @@ function valoresIniciales(corteExistente: Corte | null): CorteFormValues {
     zonaMapa: corteExistente.zonaMapa ?? '',
     activo: corteExistente.activo,
     precioVenta: corteExistente.precioVenta ?? '',
+    descuentaStockDeCorteId: corteExistente.descuentaStockDeCorteId ?? '',
   }
 }
 
 interface FormularioCorteProps {
   /** `null` = alta; un corte = edición (precarga sus valores). */
   corteExistente: Corte | null
+  /** Catálogo completo — para el selector "Descuenta el stock de" (pedido por chat). */
+  cortes: Corte[]
   onGuardar: (valores: CorteFormValues) => void
   onCancelar: () => void
   guardando: boolean
 }
 
 /** FR-109/FR-501: alta y edición de un corte, mismo formulario para ambos casos. */
-export function FormularioCorte({ corteExistente, onGuardar, onCancelar, guardando }: FormularioCorteProps) {
+export function FormularioCorte({ corteExistente, cortes, onGuardar, onCancelar, guardando }: FormularioCorteProps) {
   const [valores, setValores] = useState<CorteFormValues>(() => valoresIniciales(corteExistente))
   const [error, setError] = useState<string | null>(null)
+
+  // Candidatos para "Descuenta el stock de": activos, no él mismo, y que no redirijan ya
+  // a otro (un solo nivel — mismo criterio que valida el backend, CorteService).
+  const candidatosDestino = cortes.filter(
+    (c) => c.activo && c.id !== corteExistente?.id && c.descuentaStockDeCorteId == null,
+  )
 
   function cambiar<Campo extends keyof CorteFormValues>(campo: Campo, valor: CorteFormValues[Campo]) {
     setValores((previo) => ({ ...previo, [campo]: valor }))
@@ -133,6 +143,28 @@ export function FormularioCorte({ corteExistente, onGuardar, onCancelar, guardan
             </select>
           </div>
         )}
+
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="corte-descuenta-stock-de"
+            className="text-etiqueta font-medium uppercase text-texto-secundario"
+          >
+            Descuenta el stock de (opcional)
+          </label>
+          <select
+            id="corte-descuenta-stock-de"
+            value={valores.descuentaStockDeCorteId}
+            onChange={(e) => cambiar('descuentaStockDeCorteId', e.target.value)}
+            className="h-11 rounded-xl border border-borde-campo px-3 text-cuerpo"
+          >
+            <option value="">Stock propio (de siempre)</option>
+            {candidatosDestino.map((candidato) => (
+              <option key={candidato.id} value={candidato.id}>
+                {candidato.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="flex flex-col gap-1">
           <label htmlFor="corte-zona-mapa" className="text-etiqueta font-medium uppercase text-texto-secundario">

@@ -13,5 +13,6 @@ export function aCorteRequest(valores: CorteFormValues): CorteRequest {
     zonaMapa: valores.zonaMapa.trim() === '' ? null : valores.zonaMapa,
     activo: valores.activo,
     precioVenta: valores.precioVenta.trim() === '' ? null : String(parsearNumero(valores.precioVenta)),
+    descuentaStockDeCorteId: valores.descuentaStockDeCorteId.trim() === '' ? null : valores.descuentaStockDeCorteId,
   }
 }

@@ -14,6 +14,7 @@ import com.carniceria.despostado.entity.MediaResEntity;
 import com.carniceria.despostado.entity.PerdidaEntity;
 import com.carniceria.despostado.modelo.EstimacionCalculator;
 import com.carniceria.despostado.modelo.Perdidas;
+import com.carniceria.despostado.modelo.PerdidaEstimacionCalculator;
 import com.carniceria.despostado.modelo.ResumenDespostado;
 import com.carniceria.despostado.repository.DespostadoRepository;
 import com.carniceria.despostado.repository.MediaResRepository;
@@ -125,7 +126,19 @@ public class MediaResService {
 		List<CorteKgEstimadoDto> cortes = estimado.entrySet().stream()
 				.map(e -> new CorteKgEstimadoDto(e.getKey(), BigDecimals.aTexto(e.getValue())))
 				.toList();
-		return new EstimacionResponse(cortes);
+
+		// Hueso/Grasa/Merma (igual que los cortes): si nunca se cargó pérdida real en el
+		// historial, quedan en 0 (Perdidas ya nullifica a ZERO lo que falte) — no hace
+		// falta un SIN_HISTORIAL separado para esto, el de arriba ya cubre "sin nada".
+		var historicoPerdidas = perdidaRepository.buscarHistoricoPorUsuario(usuarioId);
+		Map<PerdidaEntity.Tipo, BigDecimal> perdidasEstimadas =
+				PerdidaEstimacionCalculator.estimar(historicoPerdidas, pesoKgNuevo);
+		PerdidasDto perdidas = new PerdidasDto(
+				BigDecimals.aTexto(perdidasEstimadas.getOrDefault(PerdidaEntity.Tipo.hueso, BigDecimal.ZERO)),
+				BigDecimals.aTexto(perdidasEstimadas.getOrDefault(PerdidaEntity.Tipo.grasa, BigDecimal.ZERO)),
+				BigDecimals.aTexto(perdidasEstimadas.getOrDefault(PerdidaEntity.Tipo.merma, BigDecimal.ZERO)));
+
+		return new EstimacionResponse(cortes, perdidas);
 	}
 
 	/** Opcional (FR de Fase 4): null si no vino nada, error 400 si vino algo que no matchea. */

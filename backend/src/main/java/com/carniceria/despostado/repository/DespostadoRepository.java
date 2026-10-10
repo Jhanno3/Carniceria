@@ -33,9 +33,17 @@ public interface DespostadoRepository extends JpaRepository<DespostadoEntity, UU
 	// historial estima mejor que el promedio de todos los usuarios). Sin relación
 	// @ManyToOne a propósito (cada entidad es independiente, ver research.md) — es un
 	// cruce explícito por igualdad de id.
+	//
+	// tipoProducto = Vacuno (Fase 7): el modal "Añadir stock" (Achuras/Embutidos, Cerdo,
+	// Carne) también crea filas de despostado, pero como esas entradas son degeneradas
+	// (kg = pesoKg de la media res, siempre 100 %), si entraran acá contaminarían el
+	// promedio histórico de esos cortes puntuales y la estimación los proyectaría como si
+	// fueran ~100 % de cualquier media res nueva — de ahí el "sobran X kg" aunque la tabla
+	// de Cortes vendibles (que ya solo muestra Vacuno) estuviera bien cargada.
 	@Query("select new com.carniceria.despostado.modelo.RegistroHistorico(d.corteId, d.kg, m.pesoKg) "
-			+ "from DespostadoEntity d, MediaResEntity m "
-			+ "where m.id = d.mediaResId and m.creadoPor = :usuarioId")
+			+ "from DespostadoEntity d, MediaResEntity m, CorteEntity c "
+			+ "where m.id = d.mediaResId and m.creadoPor = :usuarioId and c.id = d.corteId "
+			+ "and c.tipoProducto = com.carniceria.cortes.entity.CorteEntity.TipoProducto.Vacuno")
 	List<RegistroHistorico> buscarHistoricoPorUsuario(UUID usuarioId);
 
 	// Fase 5 (FR-505, "Beneficio por kg vendible"): mismo estilo sin @ManyToOne que

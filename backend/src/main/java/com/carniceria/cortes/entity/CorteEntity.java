@@ -58,11 +58,21 @@ public class CorteEntity {
 	@Column(name = "dueno_id", nullable = false)
 	private UUID duenoId;
 
+	/** Sin relación @ManyToOne a propósito (mismo criterio que el resto del repo) — id
+	 * explícito de otro corte del mismo catálogo. Null = este corte tiene stock propio
+	 * (el caso de siempre). Si no es null, este corte se vende con su propio precio pero
+	 * el stock que se descuenta es el del corte referenciado acá (ej. "Bife de chorizo"
+	 * descontando de "Bife angosto") — un sub-corte que la balanza reconoce por separado
+	 * pero que no se desposta por su cuenta. Un solo nivel: el corte referenciado no puede
+	 * a su vez tener esto seteado (lo valida CorteService, no la base). */
+	@Column(name = "descuenta_stock_de_corte_id")
+	private UUID descuentaStockDeCorteId;
+
 	protected CorteEntity() {
 	}
 
 	public CorteEntity(String nombre, Integer plu, Cuarto cuarto, TipoProducto tipoProducto, String zonaMapa,
-			boolean activo, BigDecimal precioVenta, UUID duenoId) {
+			boolean activo, BigDecimal precioVenta, UUID duenoId, UUID descuentaStockDeCorteId) {
 		this.nombre = nombre;
 		this.plu = plu;
 		this.cuarto = cuarto;
@@ -71,6 +81,7 @@ public class CorteEntity {
 		this.activo = activo;
 		this.precioVenta = precioVenta;
 		this.duenoId = duenoId;
+		this.descuentaStockDeCorteId = descuentaStockDeCorteId;
 	}
 
 	public UUID getId() {
@@ -135,5 +146,13 @@ public class CorteEntity {
 
 	public UUID getDuenoId() {
 		return duenoId;
+	}
+
+	public UUID getDescuentaStockDeCorteId() {
+		return descuentaStockDeCorteId;
+	}
+
+	public void setDescuentaStockDeCorteId(UUID descuentaStockDeCorteId) {
+		this.descuentaStockDeCorteId = descuentaStockDeCorteId;
 	}
 }

@@ -60,6 +60,7 @@ export function CortesPage() {
         zonaMapa: corte.zonaMapa ?? '',
         activo: !corte.activo,
         precioVenta: corte.precioVenta ?? '',
+        descuentaStockDeCorteId: corte.descuentaStockDeCorteId ?? '',
       })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No pudimos guardar los cambios.')
@@ -102,6 +103,7 @@ export function CortesPage() {
           ) : (
             <FormularioCorte
               corteExistente={corteEnEdicion ?? null}
+              cortes={cortes ?? []}
               onGuardar={guardar}
               onCancelar={() => setCorteEnEdicion(undefined)}
               guardando={guardando}

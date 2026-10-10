@@ -16,6 +16,9 @@ export interface CorteFormValues {
   zonaMapa: string
   activo: boolean
   precioVenta: string
+  // '' = sin redirección (caso de siempre). Pedido por chat: "Bife de chorizo" se vende
+  // con su propio precio, pero descuenta el stock de otro corte (ej. "Bife angosto").
+  descuentaStockDeCorteId: string
 }
 
 /** Body real de `POST`/`PUT /cortes` (contracts/despostado-api.md + FR-501 + Fase 7). */
@@ -27,4 +30,5 @@ export interface CorteRequest {
   zonaMapa: string | null
   activo: boolean
   precioVenta: string | null
+  descuentaStockDeCorteId: string | null
 }

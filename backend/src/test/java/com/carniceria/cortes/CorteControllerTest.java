@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
 import com.carniceria.shared.NegocioTestFixtures;
 import com.carniceria.shared.security.JwtClaimsHolder;
@@ -52,6 +53,9 @@ class CorteControllerTest {
 
 	@Autowired
 	private CatalogoInicialService catalogoInicialService;
+
+	@Autowired
+	private CorteRepository corteRepository;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -109,6 +113,90 @@ class CorteControllerTest {
 						.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.error").value("PLU_DUPLICADO"));
+	}
+
+	@Test
+	void crearCorte_conDescuentaStockDeCorteValido_loCreaYLoDevuelve() throws Exception {
+		UUID corteDestinoId = corteRepository.findByPlu(11).orElseThrow().getId(); // Asado
+
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Bife de chorizo");
+		request.put("plu", 9020);
+		request.put("cuarto", "Trasero");
+		request.put("zonaMapa", null);
+		request.put("descuentaStockDeCorteId", corteDestinoId.toString());
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.descuentaStockDeCorteId").value(corteDestinoId.toString()));
+	}
+
+	@Test
+	void crearCorte_conDestinoInexistente_devuelve400() throws Exception {
+		// Al crear todavía no existe el id propio, así que no se puede probar apuntándose
+		// a sí mismo en el alta — eso se cubre en actualizar() más abajo.
+		Map<String, Object> request = new java.util.HashMap<>();
+		request.put("nombre", "Bife de chorizo");
+		request.put("plu", 9021);
+		request.put("cuarto", "Trasero");
+		request.put("zonaMapa", null);
+		request.put("descuentaStockDeCorteId", UUID.randomUUID().toString());
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("CORTE_INEXISTENTE"));
+	}
+
+	@Test
+	void crearCorteQueDescuentaDeOtroQueYaRedirige_devuelve400() throws Exception {
+		UUID corteBaseId = corteRepository.findByPlu(11).orElseThrow().getId(); // Asado
+
+		Map<String, Object> primero = new java.util.HashMap<>();
+		primero.put("nombre", "Bife de chorizo");
+		primero.put("plu", 9022);
+		primero.put("cuarto", "Trasero");
+		primero.put("zonaMapa", null);
+		primero.put("descuentaStockDeCorteId", corteBaseId.toString());
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(primero)))
+				.andExpect(status().isCreated());
+		UUID bifeDeChorizoId = corteRepository.findByPlu(9022).orElseThrow().getId();
+
+		Map<String, Object> segundo = new java.util.HashMap<>();
+		segundo.put("nombre", "Otro sub-corte");
+		segundo.put("plu", 9023);
+		segundo.put("cuarto", "Trasero");
+		segundo.put("zonaMapa", null);
+		segundo.put("descuentaStockDeCorteId", bifeDeChorizoId.toString()); // ya redirige a Asado
+
+		mockMvc.perform(post("/api/v1/cortes").with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(segundo)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("CORTE_DESTINO_REDIRIGIDO"));
+	}
+
+	@Test
+	void actualizarCorte_descontandoDeSiMismo_devuelve400() throws Exception {
+		String id = crearCorteDePrueba(9024);
+
+		Map<String, Object> edicion = new java.util.HashMap<>();
+		edicion.put("nombre", "Corte de prueba 9024");
+		edicion.put("plu", 9024);
+		edicion.put("cuarto", "Ambos");
+		edicion.put("zonaMapa", null);
+		edicion.put("descuentaStockDeCorteId", id);
+
+		mockMvc.perform(put("/api/v1/cortes/{id}", id).with(jwtDeDueno())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(edicion)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("DESCUENTA_STOCK_DE_SI_MISMO"));
 	}
 
 	@Test
