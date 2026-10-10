@@ -13,11 +13,11 @@ const useCortesMock = vi.mocked(useCortes)
 const useAnadirStockMock = vi.mocked(useAnadirStock)
 
 const CORTES: CorteResponse[] = [
-  { id: 'v1', nombre: 'Vacío', plu: 12, cuarto: 'Trasero', tipoProducto: 'Vacuno', zonaMapa: 'vacio', activo: true, precioVenta: null },
-  { id: 'a1', nombre: 'Chorizo', plu: 40, cuarto: null, tipoProducto: 'AchurasEmbutidos', zonaMapa: null, activo: true, precioVenta: null },
-  { id: 'c1', nombre: 'Bondiola', plu: 41, cuarto: null, tipoProducto: 'Cerdo', zonaMapa: null, activo: true, precioVenta: null },
-  { id: 'c2', nombre: 'Inactivo', plu: 42, cuarto: null, tipoProducto: 'Cerdo', zonaMapa: null, activo: false, precioVenta: null },
-  { id: 'k1', nombre: 'Rabo', plu: 31, cuarto: null, tipoProducto: 'Carne', zonaMapa: null, activo: true, precioVenta: null },
+  { id: 'v1', nombre: 'Vacío', plu: 12, cuarto: 'Trasero', tipoProducto: 'Vacuno', zonaMapa: 'vacio', activo: true, precioVenta: null, descuentaStockDeCorteId: null },
+  { id: 'a1', nombre: 'Chorizo', plu: 40, cuarto: null, tipoProducto: 'AchurasEmbutidos', zonaMapa: null, activo: true, precioVenta: null, descuentaStockDeCorteId: null },
+  { id: 'c1', nombre: 'Bondiola', plu: 41, cuarto: null, tipoProducto: 'Cerdo', zonaMapa: null, activo: true, precioVenta: null, descuentaStockDeCorteId: null },
+  { id: 'c2', nombre: 'Inactivo', plu: 42, cuarto: null, tipoProducto: 'Cerdo', zonaMapa: null, activo: false, precioVenta: null, descuentaStockDeCorteId: null },
+  { id: 'k1', nombre: 'Rabo', plu: 31, cuarto: null, tipoProducto: 'Carne', zonaMapa: null, activo: true, precioVenta: null, descuentaStockDeCorteId: null },
 ]
 
 function mockUseCortes(data: CorteResponse[] | undefined) {

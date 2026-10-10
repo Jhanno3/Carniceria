@@ -289,7 +289,7 @@ class PerfilControllerTest {
 		int plu = java.util.concurrent.ThreadLocalRandom.current().nextInt(100_000, 999_999);
 		var corte = new CorteEntity(
 				"Corte de prueba", plu, CorteEntity.Cuarto.Ambos, CorteEntity.TipoProducto.Vacuno, null, true, null,
-				duenoId);
+				duenoId, null);
 		corte = corteRepository.save(corte);
 		corteRepository.flush();
 		return corte.getId();

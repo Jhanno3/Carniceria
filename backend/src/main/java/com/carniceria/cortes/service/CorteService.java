@@ -35,6 +35,7 @@ public class CorteService {
 	public CorteResponse crear(CorteRequest request, UUID duenoId) {
 		TipoProducto tipoProducto = parsearTipoProducto(request.tipoProducto());
 		Cuarto cuarto = parsearCuarto(request.cuarto(), tipoProducto);
+		validarDescuentaStockDeCorteId(null, request.descuentaStockDeCorteId());
 		// RLS ya scopea findByPlu al propio negocio: dos dueños distintos pueden usar el
 		// mismo PLU sin pisarse (V10__multi_negocio.sql, unique(dueno_id, plu)).
 		corteRepository.findByPlu(request.plu()).ifPresent(existente -> {
@@ -44,7 +45,7 @@ public class CorteService {
 		BigDecimal precioVenta = BigDecimals.parse(request.precioVenta());
 		CorteEntity corte = new CorteEntity(
 				request.nombre(), request.plu(), cuarto, tipoProducto, request.zonaMapa(), true, precioVenta,
-				duenoId);
+				duenoId, request.descuentaStockDeCorteId());
 		corteRepository.save(corte);
 		// Flush explícito: el id se genera en memoria (GenerationType.UUID), así que
 		// Hibernate puede diferir el INSERT real hasta el próximo flush — sin esto, un
@@ -58,6 +59,7 @@ public class CorteService {
 	public CorteResponse actualizar(UUID id, CorteRequest request) {
 		TipoProducto tipoProducto = parsearTipoProducto(request.tipoProducto());
 		Cuarto cuarto = parsearCuarto(request.cuarto(), tipoProducto);
+		validarDescuentaStockDeCorteId(id, request.descuentaStockDeCorteId());
 		boolean activo = request.activo() == null || request.activo();
 		BigDecimal precioVenta = BigDecimals.parse(request.precioVenta());
 
@@ -71,7 +73,8 @@ public class CorteService {
 		// LEER un corte activo recibiría un 200 "éxito" sin que RLS haya cambiado nada
 		// de verdad en la base — ver el comentario en CorteRepository.actualizar(...).
 		int filasActualizadas = corteRepository.actualizar(
-				id, request.nombre(), request.plu(), cuarto, tipoProducto, request.zonaMapa(), activo, precioVenta);
+				id, request.nombre(), request.plu(), cuarto, tipoProducto, request.zonaMapa(), activo, precioVenta,
+				request.descuentaStockDeCorteId());
 		if (filasActualizadas == 0) {
 			if (!corteRepository.existsById(id)) {
 				throw new CorteNoEncontradoException(id);
@@ -80,6 +83,24 @@ public class CorteService {
 		}
 		return corteRepository.findById(id).map(CorteResponse::de)
 				.orElseThrow(() -> new CorteNoEncontradoException(id));
+	}
+
+	/** Fase 8: {@code id} es el propio corte que se está guardando (null si es un alta, todavía
+	 * no tiene id — ahí la auto-referencia ni es posible). {@code candidatoId} null = sin
+	 * redirección, caso de siempre, no valida nada. */
+	private void validarDescuentaStockDeCorteId(UUID id, UUID candidatoId) {
+		if (candidatoId == null) {
+			return;
+		}
+		if (candidatoId.equals(id)) {
+			throw new DescuentaStockDeSiMismoException();
+		}
+		CorteEntity destino = corteRepository.findById(candidatoId)
+				.filter(CorteEntity::isActivo)
+				.orElseThrow(CorteDestinoInexistenteException::new);
+		if (destino.getDescuentaStockDeCorteId() != null) {
+			throw new CorteDestinoRedirigidoException();
+		}
 	}
 
 	private TipoProducto parsearTipoProducto(String valor) {

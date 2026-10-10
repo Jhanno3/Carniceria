@@ -2,5 +2,5 @@ package com.carniceria.despostado.dto;
 
 import java.util.List;
 
-public record EstimacionResponse(List<CorteKgEstimadoDto> cortes) {
+public record EstimacionResponse(List<CorteKgEstimadoDto> cortes, PerdidasDto perdidas) {
 }

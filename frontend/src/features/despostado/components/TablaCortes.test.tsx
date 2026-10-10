@@ -14,6 +14,7 @@ const cortes: CorteResponse[] = [
     zonaMapa: 'vacio',
     activo: true,
     precioVenta: null,
+    descuentaStockDeCorteId: null,
   },
   {
     id: 'c2',
@@ -24,6 +25,7 @@ const cortes: CorteResponse[] = [
     zonaMapa: 'asado',
     activo: true,
     precioVenta: null,
+    descuentaStockDeCorteId: null,
   },
 ]
 
@@ -139,6 +141,7 @@ describe('TablaCortes', () => {
       zonaMapa: null,
       activo: true,
       precioVenta: null,
+      descuentaStockDeCorteId: null,
     }
     render(
       <TablaCortes

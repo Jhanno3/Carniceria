@@ -14,6 +14,8 @@ export function TablaDeCortes({ cortes, onEditar, onCambiarActivo, guardando }: 
     return <p className="text-cuerpo text-texto-secundario">No hay cortes cargados todavía.</p>
   }
 
+  const nombrePorId = new Map(cortes.map((c) => [c.id, c.nombre]))
+
   return (
     <div className="overflow-x-auto rounded-xl border border-borde">
       <table className="w-full text-cuerpo">
@@ -23,6 +25,7 @@ export function TablaDeCortes({ cortes, onEditar, onCambiarActivo, guardando }: 
             <th className="p-3 text-left">PLU</th>
             <th className="p-3 text-left">Cuarto</th>
             <th className="p-3 text-left">Zona de mapa</th>
+            <th className="p-3 text-left">Descuenta de</th>
             <th className="p-3 text-left">Precio de venta</th>
             <th className="p-3 text-left">Estado</th>
             <th className="p-3 text-left"></th>
@@ -39,6 +42,9 @@ export function TablaDeCortes({ cortes, onEditar, onCambiarActivo, guardando }: 
               <td className="numero p-2 text-texto-secundario">{corte.plu}</td>
               <td className="p-2 text-texto-secundario">{corte.cuarto ?? '—'}</td>
               <td className="p-2 text-texto-secundario">{corte.zonaMapa ?? '—'}</td>
+              <td className="p-2 text-texto-secundario">
+                {corte.descuentaStockDeCorteId ? (nombrePorId.get(corte.descuentaStockDeCorteId) ?? '—') : '—'}
+              </td>
               <td className="numero p-2 text-texto-secundario">
                 {corte.precioVenta ? formatearPesos(Number(corte.precioVenta)) : '—'}
               </td>

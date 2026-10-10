@@ -6,13 +6,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.carniceria.cortes.dto.CorteRequest;
 import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
+import com.carniceria.cortes.service.CorteService;
+import com.carniceria.escaneo.entity.VentaEntity;
+import com.carniceria.escaneo.repository.VentaRepository;
 import com.carniceria.escaneo.service.ConfigEtiquetaInicialService;
 import com.carniceria.shared.NegocioTestFixtures;
 import com.carniceria.shared.security.JwtClaimsHolder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +61,12 @@ class StockControllerTest {
 
 	@Autowired
 	private CorteRepository corteRepository;
+
+	@Autowired
+	private CorteService corteService;
+
+	@Autowired
+	private VentaRepository ventaRepository;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -138,6 +149,37 @@ class StockControllerTest {
 		assertThat(asado.get("vendidoKg").asText()).isEqualTo("0");
 		assertThat(asado.get("stockKg").asText()).isEqualTo("5.000");
 		assertThat(asado.get("quedaPoco").asBoolean()).isFalse();
+	}
+
+	@Test
+	void unCorteQueDescuentaStockDeOtro_sumaSusVentasAlDestinoYNoAparecePorSuCuenta() throws Exception {
+		// "Bife de chorizo" (pedido por chat): se vende con su propio precio, pero el
+		// stock que se descuenta es el de "Asado" — el corte que realmente se cargó en
+		// el despostado. No debe aparecer como fila propia en /stock.
+		cargarDespostado(); // Vacío 10 kg, Asado 5 kg
+
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		var bifeDeChorizo = corteService.crear(
+				new CorteRequest("Bife de chorizo", 9040, "Trasero", null, null, null, "9000.00", corteAsadoId),
+				DUENO_TEST_ID);
+		UUID bifeDeChorizoId = bifeDeChorizo.id();
+		ventaRepository.save(new VentaEntity(
+				bifeDeChorizoId, new java.math.BigDecimal("2.000"), new java.math.BigDecimal("18000.00"),
+				"codigo-de-prueba", UUID.randomUUID(), DUENO_TEST_ID, DUENO_TEST_ID, Instant.now()));
+		ventaRepository.flush();
+		jwtClaimsHolder.clear();
+
+		String respuesta = mockMvc.perform(get("/api/v1/stock").with(jwtDeDueno()))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		JsonNode stock = objectMapper.readTree(respuesta);
+
+		for (JsonNode fila : stock) {
+			assertThat(fila.get("corteNombre").asText()).isNotEqualTo("Bife de chorizo");
+		}
+		JsonNode asado = filaDe(stock, "Asado");
+		assertThat(asado.get("vendidoKg").asText()).isEqualTo("2.000");
+		assertThat(asado.get("stockKg").asText()).isEqualTo("3.000"); // 5 - 2
 	}
 
 	@Test

@@ -9,6 +9,7 @@ import com.carniceria.cortes.repository.CorteRepository;
 import com.carniceria.cortes.service.CatalogoInicialService;
 import com.carniceria.despostado.dto.CargarEntradaRequest;
 import com.carniceria.despostado.dto.CorteKgDto;
+import com.carniceria.despostado.dto.PerdidasDto;
 import com.carniceria.despostado.service.MediaResService;
 import com.carniceria.shared.NegocioTestFixtures;
 import com.carniceria.shared.security.JwtClaimsHolder;
@@ -105,6 +106,83 @@ class EstimacionControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cortes[0].corteId").value(corteAsadoId.toString()))
 				.andExpect(jsonPath("$.cortes[0].kgEstimado").value("8.800")); // 11 % de 80 kg
+	}
+
+	@Test
+	void elHistoricoDeUnCorteNoVacuno_noEntraEnLaEstimacion() throws Exception {
+		// Fase 7: una entrada tipo "Añadir stock" (Bondiola, PLU 41, tipoProducto Cerdo) es
+		// degenerada — kg == pesoKg, 100 % — y no tiene que contaminar el promedio histórico
+		// que usa la estimación automática de Despostado (que es solo sobre media res).
+		UUID corteBondiolaId = corteRepository.findByPlu(41).orElseThrow().getId();
+
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		CargarEntradaRequest entradaAsado = new CargarEntradaRequest(
+				null, "100.000", null, null, null,
+				List.of(new CorteKgDto(corteAsadoId, "11.000")), // 11 % en la entrada histórica
+				null);
+		mediaResService.cargarEntrada(entradaAsado, DUENO_TEST_ID);
+
+		CargarEntradaRequest entradaBondiola = new CargarEntradaRequest(
+				null, "5.000", null, null, "Cerdo",
+				List.of(new CorteKgDto(corteBondiolaId, "5.000")), // 100 %, degenerada
+				null);
+		mediaResService.cargarEntrada(entradaBondiola, DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(get("/api/v1/medias-reses/estimacion").with(jwtDeDueno())
+						.param("pesoKg", "80.000"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.cortes.length()").value(1))
+				.andExpect(jsonPath("$.cortes[0].corteId").value(corteAsadoId.toString()))
+				.andExpect(jsonPath("$.cortes[0].kgEstimado").value("8.800")); // 11 % de 80 kg, sin Bondiola
+	}
+
+	@Test
+	void conPerdidasHistoricas_tambienEstimaHuesoGrasaYMerma() throws Exception {
+		// La automática no solo prellena cortes: también tiene que prellenar Hueso/Grasa/
+		// Merma con el mismo criterio de % histórico escalado al peso nuevo.
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		CargarEntradaRequest entradaConPerdidas = new CargarEntradaRequest(
+				null, "100.000", null, null, null,
+				List.of(new CorteKgDto(corteAsadoId, "11.000")),
+				new PerdidasDto("11.000", "6.000", "2.000")); // 11 % / 6 % / 2 %
+		mediaResService.cargarEntrada(entradaConPerdidas, DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(get("/api/v1/medias-reses/estimacion").with(jwtDeDueno())
+						.param("pesoKg", "80.000"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.perdidas.hueso").value("8.800")) // 11 % de 80 kg
+				.andExpect(jsonPath("$.perdidas.grasa").value("4.800")) // 6 % de 80 kg
+				.andExpect(jsonPath("$.perdidas.merma").value("1.600")); // 2 % de 80 kg
+	}
+
+	@Test
+	void laPerdidaDeUnaEntradaNoVacuno_noContaminaElPromedio() throws Exception {
+		// Entrada tipo "Añadir stock" (Bondiola, Cerdo) con pérdidas a propósito no-cero y
+		// absurdas para esos 5 kg: si el filtro de tipoEntrada no funcionara, contaminaría
+		// el promedio igual (es la ÚNICA entrada con perdidas cargadas acá) y la estimación
+		// no daría 0 — tiene que excluirse del todo, no solo diluirse.
+		UUID corteBondiolaId = corteRepository.findByPlu(41).orElseThrow().getId();
+		jwtClaimsHolder.set("{\"sub\":\"" + DUENO_TEST_ID + "\",\"role\":\"authenticated\"}");
+		CargarEntradaRequest entradaBondiola = new CargarEntradaRequest(
+				null, "5.000", null, null, "Cerdo",
+				List.of(new CorteKgDto(corteBondiolaId, "5.000")),
+				new PerdidasDto("3.000", "1.000", "1.000"));
+		mediaResService.cargarEntrada(entradaBondiola, DUENO_TEST_ID);
+		CargarEntradaRequest entradaAsadoSinPerdidas = new CargarEntradaRequest(
+				null, "100.000", null, null, null,
+				List.of(new CorteKgDto(corteAsadoId, "11.000")),
+				null);
+		mediaResService.cargarEntrada(entradaAsadoSinPerdidas, DUENO_TEST_ID);
+		jwtClaimsHolder.clear();
+
+		mockMvc.perform(get("/api/v1/medias-reses/estimacion").with(jwtDeDueno())
+						.param("pesoKg", "80.000"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.perdidas.hueso").value("0"))
+				.andExpect(jsonPath("$.perdidas.grasa").value("0"))
+				.andExpect(jsonPath("$.perdidas.merma").value("0"));
 	}
 
 	private RequestPostProcessor jwtDeOtroUsuario() {

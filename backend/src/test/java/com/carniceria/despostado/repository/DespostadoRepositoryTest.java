@@ -137,6 +137,6 @@ class DespostadoRepositoryTest {
 		CorteEntity corte = corteRepository.findById(corteId).orElseThrow();
 		corteService.actualizar(corteId, new CorteRequest(
 				corte.getNombre(), corte.getPlu(), corte.getCuarto().name(), corte.getTipoProducto().name(),
-				corte.getZonaMapa(), corte.isActivo(), precioVenta));
+				corte.getZonaMapa(), corte.isActivo(), precioVenta, corte.getDescuentaStockDeCorteId()));
 	}
 }

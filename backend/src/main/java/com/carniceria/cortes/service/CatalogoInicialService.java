@@ -97,7 +97,7 @@ public class CatalogoInicialService {
 		for (CorteDeEjemplo ejemplo : CATALOGO_DE_EJEMPLO) {
 			corteRepository.save(new CorteEntity(
 					ejemplo.nombre(), ejemplo.plu(), ejemplo.cuarto(), ejemplo.tipoProducto(), ejemplo.zonaMapa(),
-					true, null, duenoId));
+					true, null, duenoId, null));
 		}
 		// Flush explícito: sin esto, los INSERT quedan en el buffer de Hibernate hasta que
 		// algo más dispare un flush automático — si para entonces la sesión ya cambió de

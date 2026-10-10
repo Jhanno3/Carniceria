@@ -67,4 +67,5 @@ export interface CorteKgEstimadoDto {
 
 export interface EstimacionResponse {
   cortes: CorteKgEstimadoDto[]
+  perdidas: PerdidasDto
 }

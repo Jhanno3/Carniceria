@@ -13,6 +13,11 @@ export interface CorteResponse {
   activo: boolean
   /** $/kg (Fase 5, FR-501) — precio que se le cobra al cliente, nunca un costo. */
   precioVenta: string | null
+  // Pedido por chat: un "sub-corte" que la balanza reconoce por separado (ej. "Bife de
+  // chorizo") pero que no se desposta por su cuenta — se vende con su propio precio, pero
+  // el stock que se descuenta es el del corte referenciado acá, no el propio. null = este
+  // corte tiene stock propio (el caso de siempre).
+  descuentaStockDeCorteId: string | null
 }
 
 // Ver contracts/control-diario-api.md, "GET/PUT /config-etiqueta" (FR-209).
